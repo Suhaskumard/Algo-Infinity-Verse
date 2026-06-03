@@ -868,6 +868,39 @@ body {
   border-color: #ff4d6d;
 }
 
+.notes-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  margin-left: 0.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.notes-btn:hover {
+  transform: scale(1.12);
+  color: #fbbf24;
+  border-color: #fbbf24;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.35);
+}
+
+.notes-btn.active {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border-color: #fbbf24;
+}
+
+.notes-btn i {
+  pointer-events: none;
+}
+
 .favorite-btn i {
   pointer-events: none;
 }
@@ -1751,6 +1784,26 @@ body {
 
 .modal-close:hover {
   color: var(--text-primary);
+}
+
+#notesEditor {
+  width: 100%;
+  min-height: 200px;
+  background: var(--dark-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 1rem;
+  color: var(--text-primary);
+  font-family: "Fira Code", monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+#notesEditor:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
 }
 
 .modal-body {

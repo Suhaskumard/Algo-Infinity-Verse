@@ -391,8 +391,10 @@
                     <h3>Achievements</h3>
                     <div class="badges-container" id="badgesContainer">
                     </div>
+                </div>
+            </div>
 
-      <div class="container">
+            <div class="container">
         <h2 class="section-title">
           <span class="title-icon">📊</span>
           Your Dashboard
@@ -1086,6 +1088,24 @@
       </div>
     </footer>
 
+    <div class="modal" id="notesModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="notesModalTitle">Problem Notes</h3>
+          <button class="modal-close" id="notesModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="notesEditor" placeholder="Write your notes here..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="notesCancelBtn">Cancel</button>
+          <button class="btn btn-primary" id="notesSaveBtn">
+            <i class="fas fa-save"></i> Save Notes
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="script.js"></script>
-  </body>
+</body>
 </html>

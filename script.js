@@ -965,88 +965,6 @@ const chatbotResponses = {
 
 // ===== STATE MANAGEMENT =====
 let userProgress = {
-    name: "Learner",
-    avatar: "🚀",
-    completedProblems: [],
-    xp: 0,
-    level: 1,
-    streak: 0,
-    badges: [],
-    lastActive: null,
-    joinDate: null, // Will be set on first load
-    quizScores: {}, // topic -> { bestScore, attempts, totalXP }
-};
-
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded fired, initializing app...');
-    loadUserData();
-    initLoadingScreen();
-    initNavbar();
-    initHeroSection();
-    initTopicsSection();
-    initQuizSection();
-    initPracticeSection();
-    initRoadmap();
-    initDashboard();
-    initGamification();
-    initChatbot();
-    initProfile();
-    initScrollEffects();
-    initDarkMode();
-
-    // Update profile display after loading
-    
-    console.log('App initialization complete');
-
-    // Language change handler for code editor
-    const langSelect = document.getElementById('languageSelect');
-    if (langSelect) {
-        langSelect.addEventListener('change', () => {
-            if (currentProblem) {
-                const editor = document.getElementById('codeEditor');
-                editor.value = getDefaultCode(langSelect.value, currentProblem);
-                editor.dispatchEvent(new Event('input'));
-            }
-        });
-    }
-
-    // Modal close handlers
-    const modalClose = document.getElementById('modalClose');
-    if (modalClose) {
-        modalClose.addEventListener('click', closeTopicModal);
-    }
-
-    const topicModal = document.getElementById('topicModal');
-    if (topicModal) {
-        topicModal.addEventListener('click', (e) => {
-            if (e.target === topicModal) {
-                closeTopicModal();
-            }
-        });
-    }
-
-    // Original Quiz Editor Modal (coding problems) close handlers
-    const quizEditorCloseBtn = document.getElementById('quizModalClose');
-    if (quizEditorCloseBtn) {
-        quizEditorCloseBtn.addEventListener('click', closeQuizEditor);
-    }
-
-    const quizEditorModal = document.getElementById('quizEditorModal');
-    if (quizEditorModal) {
-        quizEditorModal.addEventListener('click', (e) => {
-            if (e.target === quizEditorModal) {
-                closeQuizEditor();
-            }
-        });
-    }
-
-    // New Topic Quiz Modal close handlers
-    const topicQuizCloseBtn = document.getElementById('topicQuizModalClose');
-    if (topicQuizCloseBtn) {
-        topicQuizCloseBtn.addEventListener('click', closeQuizModal);
-    }
-
   name: "Learner",
   avatar: "🚀",
   completedProblems: [],
@@ -1066,7 +984,6 @@ document.addEventListener('DOMContentLoaded', () => {
 };
 
 applySavedTheme();
-
 
 // ===== INITIALIZATION =====
 document.addEventListener("DOMContentLoaded", () => {
@@ -1822,6 +1739,28 @@ function initPracticeSection() {
   const problemsGrid = document.querySelector(".problems-grid");
   if (!problemsGrid) return;
 
+  const notesCloseBtn = document.getElementById("notesModalClose");
+  const notesCancelBtn = document.getElementById("notesCancelBtn");
+  const notesSaveBtn = document.getElementById("notesSaveBtn");
+  const notesModal = document.getElementById("notesModal");
+
+  if (notesCloseBtn) {
+    notesCloseBtn.addEventListener("click", closeNotesModal);
+  }
+  if (notesCancelBtn) {
+    notesCancelBtn.addEventListener("click", closeNotesModal);
+  }
+  if (notesSaveBtn) {
+    notesSaveBtn.addEventListener("click", saveProblemNotes);
+  }
+  if (notesModal) {
+    notesModal.addEventListener("click", (e) => {
+      if (e.target === notesModal) {
+        closeNotesModal();
+      }
+    });
+  }
+
   // Filter buttons
   const filterButtons = document.querySelectorAll(".filter-btn");
   let currentFilter = "all";
@@ -1902,19 +1841,25 @@ function renderProblems(filter = "all", searchQuery = "") {
         <div class="problem-card animate-in" data-id="${problem.id}">
             <div class="problem-header">
               <h3 class="problem-title">${problem.title}</h3>
-              <div class="problem-actions">
-              <button class="favorite-btn ${
-                //here we check if the problem is in the user's favorites and add the 'active' class to the button if it is
-                userProgress.favoriteProblems.includes(problem.id)
-                  ? "active"
-                  : ""
-              }"
+               <div class="problem-actions">
+               <button class="favorite-btn ${
+                 //here we check if the problem is in the user's favorites and add the 'active' class to the button if it is
+                 userProgress.favoriteProblems.includes(problem.id)
+                   ? "active"
+                   : ""
+               }"
 data-id="${problem.id}">
-        <i class="fas fa-heart"></i>
-    </button>
+         <i class="fas fa-heart"></i>
+     </button>
 
-                <span class="difficulty-badge ${getDifficultyClass(problem.difficulty)}">${problem.difficulty}</span>
-            </div>
+               <button class="notes-btn ${
+                userProgress.problemNotes[problem.id] ? "active" : ""
+              }" data-id="${problem.id}">
+                 <i class="fas fa-sticky-note"></i>
+               </button>
+
+                 <span class="difficulty-badge ${getDifficultyClass(problem.difficulty)}">${problem.difficulty}</span>
+             </div>
             </div>
             <div class="problem-tags">
                 ${problem.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}
@@ -1944,6 +1889,16 @@ data-id="${problem.id}">
       toggleFavorite(problemId);
 
       renderProblems(filter, searchQuery);
+    });
+  });
+
+  // Notes button handlers
+  problemsGrid.querySelectorAll(".notes-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      const problemId = parseInt(btn.dataset.id);
+      openNotesModal(problemId);
     });
   });
 
@@ -1994,77 +1949,33 @@ function initRoadmap() {
 
 // ===== PROFILE =====
 function initProfile() {
-    var profileName = document.getElementById("profileName");
-    if (profileName) {
-        profileName.textContent = userProgress.name;
-    }
-    
-    // Set joined date
-    var joinDate = document.getElementById("joinDate");
-    if (joinDate) {
-        let joinDateObj;
-        if (userProgress.joinDate) {
-            joinDateObj = new Date(userProgress.joinDate);
-        } else {
-            joinDateObj = new Date();
-            userProgress.joinDate = joinDateObj.toISOString();
-            saveUserData();
-        }
-        joinDate.textContent = joinDateObj.toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric"
-        });
-    }
-    
-    // Set current date in dashboard
-    var currentDateElement = document.getElementById("current-date");
-    if (currentDateElement) {
-        var today = new Date();
-        currentDateElement.textContent = "Today: " + today.toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric"
-        });
-    }
-    
-    // Set current date in dashboard card
-    var dashboardCurrentDateElement = document.getElementById("dashboard-current-date");
-    if (dashboardCurrentDateElement) {
-        var today = new Date();
-        dashboardCurrentDateElement.textContent = "Today: " + today.toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric"
-        });
-    }
-    
-    var avatarIcon = document.querySelector('.avatar-icon');
-    if (avatarIcon) {
-        avatarIcon.textContent = userProgress.avatar || '🚀';
-    }
-    updateProfile();
-
-  var profileName = document.getElementById("profileName");
-  if (profileName) {
-    profileName.textContent = userProgress.name;
-  }
-  var joinDate = document.getElementById("joinDate");
-  if (joinDate) {
-    var today = new Date();
-    joinDate.textContent = today.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
-  var avatarIcon = document.querySelector(".avatar-icon");
-  if (avatarIcon) {
-    avatarIcon.textContent = userProgress.avatar || "🚀";
-  }
-  updateProfile();
-
-}
+   var profileName = document.getElementById("profileName");
+   if (profileName) {
+     profileName.textContent = userProgress.name;
+   }
+   var joinDate = document.getElementById("joinDate");
+   if (joinDate) {
+     var today = new Date();
+     joinDate.textContent = today.toLocaleDateString("en-US", {
+       month: "long",
+       day: "numeric",
+       year: "numeric",
+     });
+   }
+   var currentDate = document.getElementById("current-date");
+   if (currentDate) {
+     currentDate.textContent = new Date().toLocaleDateString("en-US", {
+       weekday: "long",
+       month: "long",
+       day: "numeric",
+     });
+   }
+   var avatarIcon = document.querySelector(".avatar-icon");
+   if (avatarIcon) {
+     avatarIcon.textContent = userProgress.avatar || "🚀";
+   }
+   updateProfile();
+ }
 
 function updateProfile() {
   var levelNames = [
@@ -2211,18 +2122,32 @@ function initDashboard() {
 }
 
 function updateDashboard() {
-  document.getElementById("completedProblems").textContent =
-    userProgress.completedProblems.length;
-  document.getElementById("currentStreak").textContent = userProgress.streak;
-  document.getElementById("totalXP").textContent = userProgress.xp;
+   document.getElementById("completedProblems").textContent =
+     userProgress.completedProblems.length;
+   document.getElementById("currentStreak").textContent = userProgress.streak;
+   document.getElementById("totalXP").textContent = userProgress.xp;
 
-  updateActivityList();
-  updateBadges();
-  updateRecentProblems(); // Recently Viewed Problems
-  updateLeaderboard();
-}
+   updateCurrentDate();
+   updateActivityList();
+   updateBadges();
+   updateRecentProblems(); // Recently Viewed Problems
+   updateLeaderboard();
+ }
 
-function updateActivityList() {
+function updateCurrentDate() {
+   const dateEl = document.getElementById("dashboard-current-date");
+   if (dateEl) {
+     const now = new Date();
+     dateEl.textContent = now.toLocaleDateString("en-US", {
+       weekday: "long",
+       month: "long",
+       day: "numeric",
+       year: "numeric",
+     });
+   }
+ }
+
+ function updateActivityList() {
   const activityList = document.getElementById("activityList");
 
   if (userProgress.completedProblems.length === 0) {
@@ -2732,68 +2657,6 @@ function saveUserData() {
 }
 
 function loadUserData() {
-
-    try {
-        const saved = localStorage.getItem('algoInfinityVerse');
-        if (saved) {
-            const data = JSON.parse(saved);
-            userProgress = { ...userProgress, ...data };
-
-            // Ensure quizScores exists
-            if (!userProgress.quizScores) {
-                userProgress.quizScores = {};
-            }
-            
-            // Initialize joinDate if not set
-            if (!userProgress.joinDate) {
-                userProgress.joinDate = new Date().toISOString();
-                saveUserData();
-            }
-
-            // Update streak if user was active yesterday
-            if (userProgress.lastActive) {
-                const lastActive = new Date(userProgress.lastActive);
-                const today = new Date();
-                const diffDays = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
-
-                if (diffDays === 0) {
-                    // Already active today
-                } else if (diffDays === 1) {
-                    userProgress.streak += 1;
-                } else {
-                    userProgress.streak = 0;
-                }
-                saveUserData();
-            }
-        } else {
-            // Initialize with some demo data
-            userProgress.name = "Learner";
-            userProgress.avatar = "🚀";
-            userProgress.completedProblems = [1, 2, 10];
-            userProgress.xp = 350;
-            userProgress.level = 2;
-            userProgress.streak = 3;
-            userProgress.badges = [1];
-            userProgress.joinDate = new Date().toISOString();
-            userProgress.quizScores = {};
-            saveUserData();
-        }
-    } catch (error) {
-        console.error('Error loading user data, resetting to defaults:', error);
-        // Reset to defaults
-        userProgress = {
-            name: "Learner",
-            avatar: "🚀",
-            completedProblems: [],
-            xp: 0,
-            level: 1,
-            streak: 0,
-            badges: [],
-            lastActive: null,
-            joinDate: new Date().toISOString(),
-            quizScores: {}
-        };
-
   try {
     const saved = localStorage.getItem("algoInfinityVerse");
     if (saved) {
@@ -2823,7 +2686,6 @@ function loadUserData() {
         } else {
           userProgress.streak = 0;
         }
-
         saveUserData();
       }
     } else {
@@ -2838,10 +2700,6 @@ function loadUserData() {
       userProgress.quizScores = {};
       saveUserData();
     }
-
-    // Update profile display after loading
-    initProfile();
-
   } catch (error) {
     console.error("Error loading user data, resetting to defaults:", error);
     // Reset to defaults
@@ -2860,7 +2718,6 @@ function loadUserData() {
   }
   // Update profile display after loading
   updateProfile();
-
 }
 
 // ===== QUIZ EDITOR =====
@@ -2886,6 +2743,41 @@ function openTopicModal(topic) {
 
 function closeTopicModal() {
   document.getElementById("topicModal").classList.remove("active");
+}
+
+let currentNotesProblemId = null;
+
+function openNotesModal(problemId) {
+  const modal = document.getElementById("notesModal");
+  if (!modal) return;
+
+  currentNotesProblemId = problemId;
+  const problem = practiceProblems.find((p) => p.id === problemId);
+  document.getElementById("notesModalTitle").textContent = `Notes: ${problem ? problem.title : ""}`;
+  document.getElementById("notesEditor").value = userProgress.problemNotes[problemId] || "";
+  modal.classList.add("active");
+}
+
+function closeNotesModal() {
+  const modal = document.getElementById("notesModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+  currentNotesProblemId = null;
+}
+
+function saveProblemNotes() {
+  if (!currentNotesProblemId) return;
+
+  const notes = document.getElementById("notesEditor").value.trim();
+  userProgress.problemNotes[currentNotesProblemId] = notes;
+  saveUserData();
+  closeNotesModal();
+  showNotification("Notes saved successfully! 📝", "success");
+}
+
+function toggleNotesButton(btn, problemId) {
+  const hasNotes = btn.classList.toggle("active");
 }
 
 function closeQuizEditor() {
@@ -3344,48 +3236,6 @@ document.addEventListener("click", (e) => {
 window.addEventListener("load", () => {
   console.log("Algo Infinity Verse loaded successfully! 🚀");
 });
-function setJoinDate() {
-    const joinElement = document.getElementById("joinDate");
-
-    if (!joinElement) return;
-
-    const options = {
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-    };
-
-    const today = new Date().toLocaleDateString(undefined, options);
-
-    joinElement.innerText = today;
-}
-
-setJoinDate();
-// ✅ FIX: Current Date feature for dashboard + profile
-
-function updateDate() {
-    const today = new Date();
-
-    const formattedDate = today.toLocaleDateString(undefined, {
-        weekday: "long",   // Monday
-        year: "numeric",   // 2026
-        month: "long",     // June
-        day: "numeric"     // 1
-    });
-
-    // ✅ FIX: dashboard date update
-    document.getElementById("dashboard-current-date").textContent = formattedDate;
-
-    // ✅ FIX: profile date update
-    document.getElementById("profile-current-date").textContent = formattedDate;
-}
-
-// run immediately
-updateDate();
-
-// optional: auto refresh every hour (safe for daily date change)
-setInterval(updateDate, 60 * 60 * 1000);
-
 
 // ===== NEWSLETTER FORM VALIDATION =====
 function validateEmail(email) {
