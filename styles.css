@@ -65,7 +65,16 @@ body {
 .loader {
   text-align: center;
 }
+.big-box{
+     transition: transform 0.3s ease-in; 
+}
+.big-box {
+    transition: transform 0.3s ease-in-out;
+}
 
+.big-box:hover{
+    transform: scale(1.05);
+}
 .infinity-loader {
   font-size: 6rem;
   font-weight: 900;
@@ -552,7 +561,7 @@ body {
 }
 
 .topic-card:hover {
-  transform: translateY(-10px);
+  transform: translateY(-10px) ;
   box-shadow: var(--glass-shadow);
   border-color: var(--primary-light);
 }
