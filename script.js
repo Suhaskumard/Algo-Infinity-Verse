@@ -1037,6 +1037,7 @@ let userProgress = {
   name: "Learner",
   avatar: "🚀",
   completedProblems: [],
+  completedDailyChallenges: [],
 
   favoriteProblems: [], //here i have added a new property to store the user's favorite problems
   recentProblems: [], //here i have added a new property to store the user's recent problems
@@ -1078,6 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initDarkMode();
   initNewsletterValidation();
   initScrollEffects();
+  initFooterCurrentDate();
 
   // Update profile display after loading
   updateProfile();
@@ -1428,13 +1430,16 @@ function getTopicProgress(topicName) {
 }
 
 // ===== TOPICS SECTION =====
-function getDailyTopic() {
+function getDayOfYear() {
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
   const diff = now - start;
   const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay);
-  const index = dayOfYear % dsaTopics.length;
+  return Math.floor(diff / oneDay);
+}
+
+function getDailyTopic() {
+  const index = getDayOfYear() % dsaTopics.length;
   return dsaTopics[index];
 }
 
@@ -2562,46 +2567,6 @@ function updateFreezeHistoryList() {
 
   freezeHistoryList.innerHTML = historyItems.join("");
 }
-// ===== RECENTLY VIEWED PROBLEMS ===== //
-function updateRecentProblems() {
-  const container = document.getElementById("recentProblemsList");
-
-  if (!container) return;
-
-  if (
-    !userProgress.recentProblems ||
-    userProgress.recentProblems.length === 0
-  ) {
-    container.innerHTML = "<p>No recently viewed problems</p>";
-    return;
-  }
-
-  container.innerHTML = userProgress.recentProblems
-    .map((id) => {
-      const problem = practiceProblems.find((p) => p.id === id);
-
-      if (!problem) return "";
-
-      return `
-        <div class="recent-problem" data-id="${problem.id}">
-          ${problem.title}
-        </div>
-      `;
-    })
-    .join("");
-
-  container.querySelectorAll(".recent-problem").forEach((item) => {
-    item.addEventListener("click", () => {
-      const problemId = parseInt(item.dataset.id);
-
-      const problem = practiceProblems.find((p) => p.id === problemId);
-
-      if (problem) {
-        openQuizEditor(problem);
-      }
-    });
-  });
-}
 
 function updateBadges() {
   const container = document.getElementById("badgesContainer");
@@ -2821,6 +2786,43 @@ function renderLeaderboardRows(rows, currentUserId = getCurrentUserId(), options
 // ===== GAMIFICATION =====
 function initGamification() {
   updateXPBar();
+}
+
+function initDailyChallenge() {
+  const card = document.getElementById("dailyChallengeCard");
+  const textEl = document.getElementById("dailyChallengeText");
+  const btn = document.getElementById("completeChallengeBtn");
+
+  if (!card || !textEl || !btn) return;
+
+  const challengeIndex = getDayOfYear() % dailyChallenges.length;
+  const challenge = dailyChallenges[challengeIndex];
+
+  const completedChallenges = userProgress.completedDailyChallenges || [];
+  const alreadyCompleted = completedChallenges.includes(challenge.id);
+
+  textEl.textContent = `${challenge.title}: ${challenge.description}`;
+  btn.disabled = alreadyCompleted;
+  btn.innerHTML = alreadyCompleted
+    ? "Challenge Completed ✓"
+    : `<i class="fas fa-bolt"></i> Complete Challenge (+${challenge.xpReward} XP)`;
+
+  btn.addEventListener("click", () => {
+    if (!userProgress.completedDailyChallenges) {
+      userProgress.completedDailyChallenges = [];
+    }
+    if (!userProgress.completedDailyChallenges.includes(challenge.id)) {
+      userProgress.completedDailyChallenges.push(challenge.id);
+      addXP(challenge.xpReward);
+      saveUserData();
+      showNotification(
+        `Challenge completed! +${challenge.xpReward} XP earned! 🚀`,
+        "success"
+      );
+      btn.disabled = true;
+      btn.textContent = "Challenge Completed ✓";
+    }
+  });
 }
 
 function addXP(amount) {
@@ -3170,8 +3172,16 @@ function saveUserData() {
   }
 }
 
+let cachedSession = null;
+let leaderboardRequestId = 0;
+
+// Leaderboard UI config
+const LEADERBOARD_LIMIT = 10;
+
 let progressSyncInFlight = null;
 let pendingProgressSync = false;
+let progressSyncTimer = null;
+
 
 function queueProgressSync() {
   if (location.protocol === "file:") return;
@@ -3991,7 +4001,23 @@ function initNewsletterValidation() {
   });
 }
 // Back To Top Button (supports both ids: backToTopBtn and scrollTopBtn)
+function initFooterCurrentDate() {
+  const yearEl = document.getElementById("footer-current-year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  const dateEl = document.getElementById("footer-current-date");
+  if (dateEl) {
+    dateEl.textContent = `Today: ${new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })}`;
+  }
+}
+
 function initBackToTopButtons() {
+
   const backToTopBtn = document.getElementById("backToTopBtn");
   const scrollTopBtn = document.getElementById("scrollTopBtn");
 
