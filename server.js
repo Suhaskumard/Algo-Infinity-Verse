@@ -77,11 +77,12 @@ function fromBase64Url(input) {
 }
 
 function sessionSecret() {
-  return (
-    process.env.SESSION_SECRET ||
-    "dev-only-change-me-with-SESSION_SECRET-before-deploying"
-  );
-}
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === "production") {
+   throw new Error("SESSION_SECRET is required in production.");
+  }
+  return "dev-only-change-me-with-SESSION_SECRET-before-deploying";
+ }
 
 function sign(value) {
   return crypto.createHmac("sha256", sessionSecret()).update(value).digest("base64url");
@@ -153,8 +154,8 @@ function clearSessionCookie() {
   return `${SESSION_COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`;
 }
 
-const db = initializeFirebase();
-const useFirestore = !!db;
+let db = null;
+let useFirestore = false;
 
 async function getUserByEmail(email) {
   if (!useFirestore) {
@@ -195,65 +196,6 @@ async function readUsers() {
 async function writeUsers(users) {
   await ensureUserStore();
   await fs.writeFile(USERS_FILE, `${JSON.stringify(users, null, 2)}\n`);
-}
-
-function publicUser(user) {
-  return {
-    id: user.id,
-    name: user.name || "Learner",
-    xp: Number(user.xp || user.progress?.xp || 0),
-    level: Number(user.level || user.progress?.level || 1),
-    avatar: user.avatar || user.progress?.avatar || "🚀",
-    updatedAt: user.progressUpdatedAt || user.updatedAt || user.createdAt || null,
-  };
-}
-
-function leaderboardRows(users) {
-  return users
-    .map(publicUser)
-    .sort((a, b) => b.xp - a.xp || a.name.localeCompare(b.name))
-    .map((user, index) => ({ ...user, rank: index + 1 }));
-}
-
-async function updateUserProgress(userId, progress) {
-  const nextProgress = {
-    name: String(progress.name || "").trim(),
-    xp: Math.max(0, Number(progress.xp) || 0),
-    level: Math.max(1, Number(progress.level) || 1),
-    avatar: String(progress.avatar || "🚀").trim() || "🚀",
-    progressUpdatedAt: new Date().toISOString(),
-  };
-
-  if (!useFirestore) {
-    const users = await readUsers();
-    const userIndex = users.findIndex((user) => user.id === userId);
-    if (userIndex === -1) return null;
-
-    users[userIndex] = {
-      ...users[userIndex],
-      name: nextProgress.name || users[userIndex].name,
-      xp: nextProgress.xp,
-      level: nextProgress.level,
-      avatar: nextProgress.avatar,
-      progressUpdatedAt: nextProgress.progressUpdatedAt,
-    };
-    await writeUsers(users);
-    return publicUser(users[userIndex]);
-  }
-
-  const snapshot = await db.collection(COLLECTIONS.USERS).where("id", "==", userId).limit(1).get();
-  if (snapshot.empty) return null;
-
-  const doc = snapshot.docs[0];
-  await doc.ref.update({
-    name: nextProgress.name || doc.data().name,
-    xp: nextProgress.xp,
-    level: nextProgress.level,
-    avatar: nextProgress.avatar,
-    progressUpdatedAt: nextProgress.progressUpdatedAt,
-  });
-
-  return publicUser({ id: userId, ...doc.data(), ...nextProgress });
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
@@ -326,34 +268,16 @@ async function handleApi(req, res, pathname) {
     return sendJson(res, 200, { authenticated: Boolean(session), user: session });
   }
 
-  if (pathname === "/api/leaderboard" && req.method === "GET") {
-    const session = getSession(req);
-    const users = await readUsers();
-    return sendJson(res, 200, {
-      leaders: leaderboardRows(users),
-      currentUserId: session?.sub || null,
-    });
-  }
-
-  if (pathname === "/api/progress" && req.method === "PUT") {
-    const session = getSession(req);
-    if (!session) return sendJson(res, 401, { error: "Authentication required." });
-
-    const payload = await readJsonBody(req);
-    const user = await updateUserProgress(session.sub, payload);
-    if (!user) return sendJson(res, 404, { error: "User not found." });
-
-    return sendJson(res, 200, { user });
-  }
-
   if (pathname === "/api/signup" && req.method === "POST") {
     const payload = await readJsonBody(req);
     const validationError = validateSignup(payload);
     if (validationError) return sendJson(res, 400, { error: validationError });
 
-    const users = await readUsers();
     const email = String(payload.email).trim().toLowerCase();
-    if (users.some((user) => user.email === email)) {
+   const existing = useFirestore
+      ? await getUserByEmail(email)
+      : (await readUsers()).find((user) => user.email === email);
+    if (existing) {
       return sendJson(res, 409, { error: "An account with this email already exists." });
     }
 
@@ -362,13 +286,9 @@ async function handleApi(req, res, pathname) {
       name: String(payload.name).trim(),
       email,
       password: hashPassword(String(payload.password)),
-      xp: 0,
-      level: 1,
-      avatar: "🚀",
       createdAt: new Date().toISOString(),
     };
-    users.push(user);
-    await writeUsers(users);
+    await createUser(user);
 
     const token = createSessionToken(user);
     return sendJson(
@@ -383,9 +303,9 @@ async function handleApi(req, res, pathname) {
     const payload = await readJsonBody(req);
     const email = String(payload.email || "").trim().toLowerCase();
     const password = String(payload.password || "");
-    const users = await readUsers();
-    const user = users.find((candidate) => candidate.email === email);
-
+   const user = useFirestore
+     ? await getUserByEmail(email)
+      : (await readUsers()).find((candidate) => candidate.email === email);
     if (!user || !passwordMatches(password, user.password)) {
       return sendJson(res, 401, { error: "Invalid email or password." });
     }
@@ -417,7 +337,8 @@ function resolveStaticPath(pathname) {
   };
   const mapped = routes[pathname] || pathname.slice(1);
   const filePath = path.resolve(ROOT, mapped);
-  if (!filePath.startsWith(ROOT)) return null;
+  const rel = path.relative(ROOT, filePath);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
   return filePath;
 }
 
@@ -469,10 +390,16 @@ const server = http.createServer(async (req, res) => {
 });
 
 export { server };
+if (process.env.VERCEL === "1") {
+  db = initializeFirebase();
+  useFirestore = !!db;
+}
 
 if (process.env.VERCEL !== "1") {
   loadEnvFile()
     .then(() => {
+      db = initializeFirebase();
+      useFirestore = !!db;
       const port = Number(process.env.PORT || 3000);
       const host = process.env.HOST || "127.0.0.1";
 

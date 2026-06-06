@@ -1040,8 +1040,6 @@ let userProgress = {
 
   favoriteProblems: [], //here i have added a new property to store the user's favorite problems
   recentProblems: [], //here i have added a new property to store the user's recent problems
-
-  favoriteProblems: [], //here i have added a new property to store the user's favorite problems
   problemNotes: {},
   xp: 0,
   level: 1,
@@ -1052,17 +1050,7 @@ let userProgress = {
   lastActive: null,
   quizScores: {}, // topic -> { bestScore, attempts, totalXP }
   bestQuizTimes: {},
-  dailyChallenge: {
-    completed: false,
-    completedDate: null,
-    currentChallengeId: null,
-  },
 };
-
-const LEADERBOARD_LIMIT = 10;
-let progressSyncTimer = null;
-let leaderboardRequestId = 0;
-let cachedSession = null;
 
 applySavedTheme();
 
@@ -1450,89 +1438,6 @@ function getDailyTopic() {
   return dsaTopics[index];
 }
 
-function getTodayDailyChallenge() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const diff = now - start;
-  const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay);
-  const index = dayOfYear % dailyChallenges.length;
-  return dailyChallenges[index];
-}
-
-function getDailyChallenge() {
-  const today = new Date().toDateString();
-  const saved = userProgress.dailyChallenge || {};
-
-  if (saved.completedDate === today && saved.completed) {
-    return {
-      ...getTodayDailyChallenge(),
-      completed: true,
-    };
-  }
-
-  const challengeId = saved.currentChallengeId || getTodayDailyChallenge().id;
-
-  return {
-    ...getTodayDailyChallenge(),
-    id: challengeId,
-    completed: false,
-  };
-}
-
-function completeDailyChallenge() {
-  const challenge = getDailyChallenge();
-  const today = new Date().toDateString();
-
-  if (challenge.completed) {
-    showNotification("Daily challenge already completed today!", "info");
-    return;
-  }
-
-  const bonusXP = challenge.xpReward || 50;
-  addXP(bonusXP);
-
-  userProgress.dailyChallenge = {
-    completed: true,
-    completedDate: today,
-    currentChallengeId: challenge.id,
-  };
-
-  saveUserData();
-
-  updateDashboard();
-  updateGamification();
-
-  showNotification(`Daily Challenge Complete! +${bonusXP} XP`, "success");
-}
-
-function initDailyChallenge() {
-  const challenge = getDailyChallenge();
-
-  const textEl = document.getElementById("dailyChallengeText");
-  const btn = document.getElementById("completeChallengeBtn");
-
-  if (!textEl || !btn) return;
-
-  textEl.textContent = `${challenge.title}: ${challenge.description}`;
-  btn.textContent = challenge.completed
-    ? "Completed Today +0 XP"
-    : `Complete Challenge (+${challenge.xpReward || 50} XP)`;
-
-  btn.classList.toggle("completed", challenge.completed);
-  btn.disabled = challenge.completed;
-
-  btn.onclick = () => {
-    if (challenge.problemId) {
-      const problem = practiceProblems.find((p) => p.id === challenge.problemId);
-      if (problem) {
-        openQuizEditor(problem);
-      }
-    }
-    completeDailyChallenge();
-  };
-}
-
 function initTopicOfTheDay() {
   const topic = getDailyTopic();
   if (!topic) return;
@@ -1575,10 +1480,6 @@ function initTopicsSection() {
             <div class="mastery-header">
                 <span class="mastery-label">Progress</span>
                 <span class="mastery-stats">${progress.completed}/${progress.total} solved</span>
-            </div>
-            <div class="mastery-bar" role="progressbar" aria-valuenow="${progress.percentage}" aria-valuemin="0" aria-valuemax="100" aria-label="${topic.name} mastery progress">
-                <div class="mastery-fill" style="width: ${progress.percentage}%"></div>
-            </div>
             </div>
             <div class="mastery-bar" role="progressbar" aria-valuenow="${progress.percentage}" aria-valuemin="0" aria-valuemax="100" aria-label="${topic.name} mastery progress">
                 <div class="mastery-fill" style="width: ${progress.percentage}%"></div>
@@ -1674,12 +1575,13 @@ function initQuizSection() {
       // Add click handler
       const startBtn = card.querySelector(".start-quiz-btn");
       if (startBtn) {
-        startBtn.addEventListener("click", () => {
-          console.log(`Start Quiz clicked for ${topic.name}`);
-          console.log("QUIZ BUTTON CLICKED");
-          console.log("Topic Key:", topicKey);
-          startQuiz(topicKey);
-        });
+        startBtn.addEventListener("click", (e) => {
+         e.stopPropagation();
+           console.log(`Start Quiz clicked for ${topic.name}`);
+           console.log("QUIZ BUTTON CLICKED");
+           console.log("Topic Key:", topicKey);
+           startQuiz(topicKey);
+         });
       } else {
         console.error("Start quiz button not found for topic:", topic.name);
       }
@@ -1722,11 +1624,11 @@ function startQuiz(topicKey) {
 
   const resultEl = document.getElementById("topicQuizResult");
 
-if (resultEl) {
-  resultEl.classList.add("hidden");
-  resultEl.innerHTML = "";
-}
-document.getElementById("topicQuizQuestionText").style.display = "block";
+  if (resultEl) {
+    resultEl.classList.add("hidden");
+    resultEl.innerHTML = "";
+  }
+  document.getElementById("topicQuizQuestionText").style.display = "block";
   document.getElementById("topicQuizOptions").style.display = "block";
   document.getElementById("topicQuizProgress").style.display = "block";
   document.getElementById("topicQuizCounter").style.display = "block";
@@ -1801,6 +1703,8 @@ function formatQuizTime(seconds) {
 
 // Quiz Modal
 let currentQuiz = null;
+let lastQuizReview = null;
+let lastQuizResultData = null;
 let quizStartTime = null;
 let quizTimerInterval = null;
 // let currentNotesProblemId = null; // duplicate declaration removed
@@ -1928,10 +1832,6 @@ function selectQuizAnswer(selectedIndex) {
 }
 
 function finishQuiz() {
-  console.log("FINISH QUIZ");
-  console.log("Score:", currentQuiz.score);
-  console.log("Questions:", currentQuiz.questions.length);
-
   const topicKey = currentQuiz.topic;
   const score = currentQuiz.score;
   const total = currentQuiz.questions.length;
@@ -1970,29 +1870,38 @@ function finishQuiz() {
   document.getElementById("topicQuizQuestionText").style.display = "none";
   document.getElementById("topicQuizOptions").style.display = "none";
   console.log("RESULTS:", score, total, percentage, xpEarned, completionTime);
+  const reviewSnapshot = JSON.parse(JSON.stringify(currentQuiz));
+  lastQuizReview = reviewSnapshot;
+lastQuizResultData = {
+  score,
+  total,
+  percentage,
+  xpEarned,
+  completionTime,
+};
+const resultEl = document.getElementById("topicQuizResult");
+
+if (resultEl) {
+    resultEl.classList.remove("hidden");
+}
   showQuizResults(score, total, percentage, xpEarned, completionTime);
   document.getElementById("topicQuizResult").scrollIntoView({
     behavior: "smooth",
     block: "center",
   });
+  document.getElementById("topicQuizProgress").style.display = "none";
+document.getElementById("topicQuizCounter").style.display = "none";
   updateQuizProgressDisplay(topicKey);
   updateDashboard();
   updateGamification();
+  console.log("SAVING REVIEW");
+  console.log(currentQuiz);
 }
 
 function showQuizResults(score, total, percentage, xpEarned, completionTime) {
-  console.log("SHOW RESULTS");
-  console.log({
-    score,
-    total,
-    percentage,
-    xpEarned,
-    completionTime,
-  });
-
   const resultEl = document.getElementById("topicQuizResult");
   if (!resultEl) return;
-
+resultEl.classList.remove("hidden");
   let message = "";
   let icon = "";
 
@@ -2022,8 +1931,83 @@ function showQuizResults(score, total, percentage, xpEarned, completionTime) {
             <p class="completion-time">Completion Time: ${formatQuizTime(completionTime)}</p>
         </div>
     `;
+  resultEl.innerHTML += `
+  <button class="btn btn-primary review-btn" onclick="showQuizReview()">
+    📖 Review Answers
+  </button>
+`;
+}
 
-  resultEl.classList.remove("hidden");
+function showQuizReview() {
+  if (
+    !lastQuizReview ||
+    !lastQuizReview.questions ||
+    !lastQuizReview.answers
+  ) {
+    showNotification("No review data found", "error");
+    return;
+  }
+
+  const resultEl = document.getElementById("topicQuizResult");
+
+  let html = `
+    <div class="quiz-review">
+      <h2>📖 Quiz Review</h2>
+  `;
+
+  lastQuizReview.questions.forEach((q, index) => {
+    const answer = lastQuizReview.answers[index] || {};
+
+    html += `
+      <div class="review-item">
+        <h4>Q${index + 1}. ${q.question}</h4>
+
+        <p>
+          <strong>Your Answer:</strong>
+          ${
+            answer.selected !== undefined
+              ? q.options[answer.selected]
+              : "Not Answered"
+          }
+          ${answer.isCorrect ? "✅" : "❌"}
+        </p>
+
+        <p class="correct-answer">
+          <strong>Correct Answer:</strong>
+          ${q.options[q.correct]}
+        </p>
+
+        <p>
+          <strong>Explanation:</strong>
+          ${q.explanation}
+        </p>
+      </div>
+    `;
+  });
+
+  html += `
+      <button class="btn btn-primary" onclick="restoreQuizResults()">
+        Back
+      </button>
+
+      <button class="btn btn-secondary" onclick="closeQuizModal()">
+        Close
+      </button>
+    </div>
+  `;
+
+  resultEl.innerHTML = html;
+}
+function restoreQuizResults() {
+  if (!lastQuizResultData) return;
+
+  showQuizResults(
+    lastQuizResultData.score,
+    lastQuizResultData.total,
+    lastQuizResultData.percentage,
+    lastQuizResultData.xpEarned,
+    lastQuizResultData.completionTime
+  );
 }
 // ===== PRACTICE SECTION =====
 function initPracticeSection() {
@@ -2031,15 +2015,11 @@ function initPracticeSection() {
   if (!problemsGrid) return;
 
   const notesCloseBtn = document.getElementById("notesModalClose");
-  const notesCancelBtn = document.getElementById("notesCancelBtn");
   const notesSaveBtn = document.getElementById("notesSaveBtn");
   const notesModal = document.getElementById("notesModal");
 
   if (notesCloseBtn) {
     notesCloseBtn.addEventListener("click", closeNotesModal);
-  }
-  if (notesCancelBtn) {
-    notesCancelBtn.addEventListener("click", closeNotesModal);
   }
   if (notesSaveBtn) {
     notesSaveBtn.addEventListener("click", saveProblemNotes);
@@ -2142,11 +2122,6 @@ function renderProblems(filter = "all", searchQuery = "") {
 data-id="${problem.id}">
         <i class="fas fa-heart"></i>
     </button>
-    <button class="notes-btn ${
-      userProgress.problemNotes[problem.id] ? "has-notes" : ""
-    }" data-id="${problem.id}">
-  <i class="fas fa-sticky-note"></i>
-</button>
 
                <button class="notes-btn ${
                  userProgress.problemNotes[problem.id] ? "active" : ""
@@ -2409,9 +2384,9 @@ function updateProfile() {
   }
 
   // Update avatar
-  document.querySelectorAll(".avatar-icon").forEach(el => {
-  el.textContent = userProgress.avatar || "🚀";
-});
+  document.querySelectorAll(".avatar-icon").forEach((el) => {
+    el.textContent = userProgress.avatar || "🚀";
+  });
 
   updateLevelProgress();
 }
@@ -2521,6 +2496,46 @@ function updateActivityList() {
     `,
     )
     .join("");
+}
+// ===== RECENTLY VIEWED PROBLEMS ===== //
+function updateRecentProblems() {
+  const container = document.getElementById("recentProblemsList");
+
+  if (!container) return;
+
+  if (
+    !userProgress.recentProblems ||
+    userProgress.recentProblems.length === 0
+  ) {
+    container.innerHTML = "<p>No recently viewed problems</p>";
+    return;
+  }
+
+  container.innerHTML = userProgress.recentProblems
+    .map((id) => {
+      const problem = practiceProblems.find((p) => p.id === id);
+
+      if (!problem) return "";
+
+      return `
+        <div class="recent-problem" data-id="${problem.id}">
+          ${problem.title}
+        </div>
+      `;
+    })
+    .join("");
+
+  container.querySelectorAll(".recent-problem").forEach((item) => {
+    item.addEventListener("click", () => {
+      const problemId = parseInt(item.dataset.id);
+
+      const problem = practiceProblems.find((p) => p.id === problemId);
+
+      if (problem) {
+        openQuizEditor(problem);
+      }
+    });
+  });
 }
 
 function updateFreezeHistoryList() {
@@ -2646,12 +2661,13 @@ function updateBadges() {
 
   // Update userProgress badges
   const newlyEarned = badges.filter((b) => b.earned).map((b) => b.id);
-  
+
   // Only save if badges changed to avoid unnecessary saves
-  const badgesChanged = JSON.stringify(newlyEarned) !== JSON.stringify(userProgress.badges);
+  const badgesChanged =
+    JSON.stringify(newlyEarned) !== JSON.stringify(userProgress.badges);
   userProgress.badges = newlyEarned;
   if (badgesChanged) {
-      saveUserData();
+    saveUserData();
   }
 
   // Dashboard badges
@@ -2921,7 +2937,7 @@ function initChatbot() {
     if (!message) return;
 
     // Add user message
-    addChatMessage(message, "user");
+     addChatMessage(message, "user");
 
     // Store previous question
     lastQuestion = message;
@@ -2955,7 +2971,7 @@ function initChatbot() {
       const response = getBotResponse(message);
 
       // Add bot response
-      addChatMessage(response, "bot");
+      addChatMessage(response, "bot", { html: true });
     }, 1000);
   }
 
@@ -2973,17 +2989,15 @@ function initChatbot() {
   });
 }
 
-function addChatMessage(message, sender) {
+function addChatMessage(message, sender, { html = false } = {}) {
   const messagesContainer = document.getElementById("chatbotMessages");
   const messageEl = document.createElement("div");
   messageEl.className = `message ${sender}`;
-  // Safe rendering
-  if (sender === "user") {
-    messageEl.textContent = message;
-  } else {
+  if (html) {
     messageEl.innerHTML = message;
+  } else {
+    messageEl.textContent = message;
   }
-
   messagesContainer.appendChild(messageEl);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
@@ -3006,7 +3020,7 @@ function getBotResponse(question) {
       <p>${escapeHtml(question)}</p>
 
       <h4>⚡ Approach</h4>
-      <p>${escapeHtml(response)}</p>
+      <p>${response}</p>
 
       <h4>💻 Code Solution</h4>
       <pre><code>
@@ -3059,7 +3073,6 @@ function initScrollEffects() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
-
 
   // Intersection Observer for animations
   const observer = new IntersectionObserver(
@@ -3291,8 +3304,6 @@ function loadUserData() {
       xp: 0,
       level: 1,
       streak: 0,
-      freezes: 0,
-      freezeHistory: [],
       favoriteProblems: [],
       problemNotes: {},
       badges: [],
@@ -3318,7 +3329,6 @@ function loadUserData() {
 // ===== QUIZ EDITOR =====
 // currentProblem declared near the top-level to avoid TDZ issues.
 
-
 // currentNotesProblemId is already declared earlier; do not redeclare it here.
 
 function openTopicModal(topic) {
@@ -3343,6 +3353,9 @@ function closeTopicModal() {
   document.getElementById("topicModal").classList.remove("active");
 }
 
+function toggleNotesButton(btn, problemId) {
+  const hasNotes = btn.classList.toggle("active");
+}
 
 function closeQuizEditor() {
   document.getElementById("quizEditorModal").classList.remove("active");
@@ -3640,7 +3653,9 @@ function updateStreak() {
 
   if (lastActive) {
     const diffDays = getDaysDifference(lastActive, today);
-    if (diffDays === 0) {
+    if (diffDays > 1) {
+      userProgress.streak = 1;
+    } else if (diffDays === 0) {
       // Already active today, don't increment streak
     } else {
       let daysMissed = diffDays > 0 ? diffDays - 1 : 0;
