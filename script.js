@@ -1001,6 +1001,22 @@ const practiceProblems = [
     ],
     followUp: "Can you solve it without using extra memory, using XOR bit manipulation?",
   },
+  {
+    id: 20,
+    title: "Intersection of Two Arrays",
+    difficulty: "easy",
+    tags: ["Arrays", "Hash Set"],
+    acceptance: "72.8%",
+    category: "arrays",
+    description:
+      "Given two integer arrays nums1 and nums2, return an array of their intersection. Each element in the result must be unique, and the result can be returned in any order.",
+    constraints: [
+      "1 ≤ nums1.length, nums2.length ≤ 1000",
+      "0 ≤ nums1[i], nums2[i] ≤ 1000",
+      "Result must contain only unique elements",
+    ],
+    followUp: "What if the arrays are already sorted? What if one array is much larger than the other?",
+  },
 ];
 
 const dailyChallenges = [
@@ -3730,6 +3746,12 @@ function generateExamples(problem) {
         <strong>Edge Cases:</strong><br>• Single element array → return that element<br>• Large arrays with the unique element at start/middle/end<br>• Negative numbers — XOR works on negative integers too<br><br>
         <strong>Key Insight (XOR):</strong><br>• a XOR a = 0 (same numbers cancel out)<br>• a XOR 0 = a (any number XOR 0 is itself)<br>• XOR all elements together → duplicates cancel, leaving the single number<br><br>
         <strong>Follow-up:</strong> Can you solve it in O(n) time and O(1) space using XOR instead of a Hash Map?`,
+    20: `<strong>Example 1:</strong><br>Input: nums1 = [1,2,2,1], nums2 = [2,2]<br>Output: [2]<br>Explanation: 2 is the only element present in both arrays; duplicates are ignored.<br><br>
+        <strong>Example 2:</strong><br>Input: nums1 = [4,9,5], nums2 = [9,4,9,8,4]<br>Output: [4,9]<br>Explanation: Both 4 and 9 appear in both arrays. Order does not matter.<br><br>
+        <strong>Example 3:</strong><br>Input: nums1 = [1,2,3], nums2 = [4,5,6]<br>Output: []<br>Explanation: No common elements — result is an empty array.<br><br>
+        <strong>Edge Cases:</strong><br>• No common elements → return []<br>• All elements in common → return unique elements of either array<br>• One array is empty → return []<br>• Both arrays identical → return unique elements of the array<br><br>
+        <strong>Key Insight (Hash Set):</strong><br>• Convert nums1 into a Set for O(1) lookups<br>• Iterate nums2 and check membership in the Set<br>• Store matches in a result Set to avoid duplicates<br><br>
+        <strong>Follow-up:</strong> Can you solve it in O(n + m) time using two Hash Sets? What changes if both arrays are pre-sorted?`,
   };
   return (
     examples[problem.id] || "<strong>Example:</strong><br>Solve this problem"
