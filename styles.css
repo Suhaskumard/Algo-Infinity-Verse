@@ -1315,6 +1315,432 @@ body {
   color: var(--accent);
 }
 
+/* ===== ROADMAP TABS & TIMELINE ===== */
+.roadmap-selector {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.roadmap-tab {
+  padding: 0.8rem 1.8rem;
+  border-radius: 50px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.roadmap-tab.active,
+.roadmap-tab:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+}
+
+.roadmap-content {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.roadmap-content.active {
+  display: block;
+  opacity: 1;
+}
+
+.roadmap-timeline {
+  position: relative;
+  padding-left: 3.5rem;
+  margin: 2rem 0;
+}
+
+.roadmap-timeline::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 1.5rem;
+  bottom: 1.5rem;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 0;
+}
+
+.roadmap-step {
+  position: relative;
+  margin-bottom: 2.5rem;
+}
+
+.step-marker-dot {
+  position: absolute;
+  left: -3.5rem;
+  top: 0.5rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--dark-surface);
+  border: 3px solid var(--glass-border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.roadmap-step.completed .step-marker-dot {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+.roadmap-step.active .step-marker-dot {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+.roadmap-step.locked .step-marker-dot {
+  opacity: 0.6;
+}
+
+.roadmap-step-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.roadmap-step.locked .roadmap-step-card {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.roadmap-step.active .roadmap-step-card {
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 5px 20px rgba(124, 58, 237, 0.15);
+}
+
+.roadmap-step.completed .roadmap-step-card {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.step-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.step-number {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+}
+
+.step-status-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.step-status-tag.locked-tag {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.step-status-tag.active-tag {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--primary);
+}
+
+.step-status-tag.completed-tag {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.step-title {
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+}
+
+.step-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.step-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.step-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  max-width: 250px;
+}
+
+.step-progress-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.step-progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: var(--dark-card);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.step-progress-bar-fill {
+  height: 100%;
+  background: var(--gradient-4);
+  width: 0%;
+  transition: width 0.6s ease;
+  border-radius: 3px;
+}
+
+.roadmap-step.completed .step-progress-bar-fill {
+  background: linear-gradient(90deg, #22c55e, #10b981);
+}
+
+/* ===== ROADMAP DETAIL MODAL ===== */
+.roadmap-modal-content {
+  max-width: 750px;
+  background: var(--dark-surface);
+  border: 1px solid var(--glass-border);
+}
+
+.step-badge-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: white;
+  background: var(--primary);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  margin-right: 0.8rem;
+}
+
+.roadmap-step-theory h4,
+.roadmap-step-complexity h4,
+.roadmap-step-quiz h4,
+.roadmap-step-problems h4 {
+  font-size: 1.1rem;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.4rem;
+}
+
+.theory-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.theory-text p {
+  margin-bottom: 0.8rem;
+}
+
+.theory-text strong {
+  color: var(--text-primary);
+}
+
+.complexity-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.complexity-table th,
+.complexity-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.complexity-table th {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.complexity-table td {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.roadmap-problems-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+
+.roadmap-problem-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  margin-bottom: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.roadmap-problem-item:hover {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.roadmap-problem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.roadmap-problem-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.roadmap-problem-meta {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.roadmap-problem-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.roadmap-problem-status.completed {
+  color: #22c55e;
+}
+
+.roadmap-problem-status.pending {
+  color: var(--text-secondary);
+}
+
+/* Roadmap Quiz Styles */
+.quiz-question-container {
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.2rem;
+}
+
+.quiz-question-text {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.8rem;
+  font-size: 0.95rem;
+}
+
+.quiz-options-list {
+  list-style: none;
+  padding: 0;
+}
+
+.quiz-option-item {
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.quiz-option-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.quiz-option-item.selected {
+  border-color: var(--primary);
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--text-primary);
+}
+
+.quiz-option-item.correct {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+  color: white;
+}
+
+.quiz-option-item.incorrect {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: white;
+}
+
+.quiz-feedback {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.quiz-feedback.correct {
+  color: #22c55e;
+}
+
+.quiz-feedback.incorrect {
+  color: #ef4444;
+}
+
+.quiz-instruction-text,
+.problems-instruction-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+#roadmapStepSubmitQuizBtn {
+  margin-bottom: 1.5rem;
+}
+
 /* ===== INTERVIEW SECTION ===== */
 .interview-grid {
   display: grid;

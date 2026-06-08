@@ -214,43 +214,66 @@
           <span class="title-icon">🛤️</span>
           Learning Roadmap
         </h2>
-        <div class="roadmap-container">
-          <div class="roadmap-progress">
-            <div class="progress-bar" id="roadmapProgress"></div>
+
+        <!-- Roadmap Tabs Selector -->
+        <div class="roadmap-selector">
+          <button class="roadmap-tab active" data-tab="basic" id="roadmapBasicTab">
+            <i class="fas fa-seedling"></i> Beginner Roadmap
+          </button>
+          <button class="roadmap-tab" data-tab="overview" id="roadmapOverviewTab">
+            <i class="fas fa-route"></i> Overall Stages
+          </button>
+        </div>
+
+        <div class="roadmap-container-wrapper">
+          <!-- Basic Roadmap (Dynamic Timeline) -->
+          <div class="roadmap-content active" id="basicRoadmapContainer">
+            <div class="roadmap-timeline" id="basicRoadmapTimeline">
+              <!-- Dynamically populated via JS -->
+            </div>
           </div>
-          <div class="roadmap-stages">
-            <div class="stage big-box" data-level="beginner">
-              <div class="stage-marker">
-                <i class="fas fa-seedling"></i>
+
+          <!-- Overall Stages Roadmap (Original) -->
+          <div class="roadmap-content" id="overviewRoadmapContainer">
+            <div class="roadmap-container">
+              <div class="roadmap-progress">
+                <div class="progress-bar" id="roadmapProgress"></div>
               </div>
-              <h3>Beginner</h3>
-              <ul>
-                <li>Basic Programming</li>
-                <li>Arrays & Strings</li>
-                <li>Recursion</li>
-              </ul>
-            </div>
-            <div class="stage big-box" data-level="intermediate">
-              <div class="stage-marker">
-                <i class="fas fa-fire"></i>
+              <div class="roadmap-stages">
+                <div class="stage big-box" data-level="beginner">
+                  <div class="stage-marker">
+                    <i class="fas fa-seedling"></i>
+                  </div>
+                  <h3>Beginner</h3>
+                  <ul>
+                    <li>Basic Programming</li>
+                    <li>Arrays & Strings</li>
+                    <li>Recursion</li>
+                  </ul>
+                </div>
+                <div class="stage big-box" data-level="intermediate">
+                  <div class="stage-marker">
+                    <i class="fas fa-fire"></i>
+                  </div>
+                  <h3>Intermediate</h3>
+                  <ul>
+                    <li>Trees & Graphs</li>
+                    <li>Dynamic Programming</li>
+                    <li>Greedy Algorithms</li>
+                  </ul>
+                </div>
+                <div class="stage big-box" data-level="advanced">
+                  <div class="stage-marker">
+                    <i class="fas fa-crown"></i>
+                  </div>
+                  <h3>Advanced</h3>
+                  <ul>
+                    <li>System Design</li>
+                    <li>Advanced Graphs</li>
+                    <li>Competitive Programming</li>
+                  </ul>
+                </div>
               </div>
-              <h3>Intermediate</h3>
-              <ul>
-                <li>Trees & Graphs</li>
-                <li>Dynamic Programming</li>
-                <li>Greedy Algorithms</li>
-              </ul>
-            </div>
-            <div class="stage big-box" data-level="advanced">
-              <div class="stage-marker">
-                <i class="fas fa-crown"></i>
-              </div>
-              <h3>Advanced</h3>
-              <ul>
-                <li>System Design</li>
-                <li>Advanced Graphs</li>
-                <li>Competitive Programming</li>
-              </ul>
             </div>
           </div>
         </div>
@@ -631,6 +654,56 @@
           <button class="btn btn-primary" id="startPracticeBtn">
             Start Practicing
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Roadmap Step Details Modal -->
+    <div class="modal" id="roadmapStepModal">
+      <div class="modal-content roadmap-modal-content">
+        <div class="modal-header">
+          <div class="step-badge-tag" id="roadmapStepBadge">Step 1</div>
+          <h3 id="roadmapStepModalTitle">Introduction to DSA</h3>
+          <button class="modal-close" id="roadmapStepModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="roadmap-step-theory">
+            <h4><i class="fas fa-book-open"></i> Theory & Key Concepts</h4>
+            <div id="roadmapStepTheoryContent" class="theory-text"></div>
+          </div>
+          
+          <div id="roadmapStepComplexitySection" class="roadmap-step-complexity hidden">
+            <h4><i class="fas fa-table"></i> Complexity Reference</h4>
+            <div class="table-responsive">
+              <table class="complexity-table">
+                <thead>
+                  <tr>
+                    <th>Operation</th>
+                    <th>Time Complexity</th>
+                    <th>Space Complexity</th>
+                  </tr>
+                </thead>
+                <tbody id="roadmapStepComplexityBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="roadmapStepQuizSection" class="roadmap-step-quiz hidden">
+            <h4><i class="fas fa-graduation-cap"></i> Concept Verification Quiz</h4>
+            <p class="quiz-instruction-text">Answer the questions below correctly to complete this step and earn +50 XP!</p>
+            <div id="roadmapStepQuizContent"></div>
+            <button class="btn btn-primary" id="roadmapStepSubmitQuizBtn">Submit Quiz</button>
+          </div>
+
+          <div id="roadmapStepProblemsSection" class="roadmap-step-problems hidden">
+            <h4><i class="fas fa-code"></i> Curated Coding Practice</h4>
+            <p class="problems-instruction-text">Solve at least one of the coding problems below to complete this step!</p>
+            <ul class="roadmap-problems-list" id="roadmapStepProblemsList"></ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="roadmapStepModalCloseBtn">Close</button>
         </div>
       </div>
     </div>

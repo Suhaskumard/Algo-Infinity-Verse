@@ -1144,7 +1144,7 @@ const chatbotResponses = {
 
 // ===== STATE MANAGEMENT =====
 let userProgress = {
-name: "Learner",
+  name: "Learner",
   avatar: "🚀",
   completedProblems: [],
   completedDailyChallenges: [],
@@ -1158,6 +1158,7 @@ name: "Learner",
   freezes: 0,
   freezeHistory: [],
   badges: [],
+  completedRoadmapSteps: [], // Store completed roadmap step IDs (e.g., [1] for Step 1)
   lastActive: null,
   quizScores: {}, // topic -> { bestScore, attempts, totalXP }
   bestQuizTimes: {},
@@ -2394,24 +2395,575 @@ function saveProblemNotes() {
 }
 
 // ===== ROADMAP =====
+const roadmapSteps = [
+  {
+    id: 1,
+    title: "Complexity Analysis & Big O",
+    icon: "fa-stopwatch",
+    desc: "Master variables, loops, conditionals, and learn how to analyze algorithm efficiency using Big-O notation.",
+    theory: `
+      <p><strong>Introduction to Algorithm Analysis:</strong> Before writing code, you must understand how to measure its efficiency. Complexity analysis allows you to evaluate how an algorithm scales as the input size grows.</p>
+      <p><strong>Big-O Notation:</strong> Big-O ($O(f(n))$) describes the upper bound of execution time or memory space in the worst-case scenario. It focuses on the dominant term and discards constants.</p>
+      <p><strong>Common Time Complexities:</strong></p>
+      <ul>
+        <li><strong>O(1) - Constant:</strong> Operation takes the same amount of time regardless of input size (e.g., accessing an element in an array by index, push/pop on a stack).</li>
+        <li><strong>O(log N) - Logarithmic:</strong> The problem size is divided in half at each step (e.g., Binary Search).</li>
+        <li><strong>O(N) - Linear:</strong> Time increases proportionally with input size (e.g., traversing an array or linked list, linear search).</li>
+        <li><strong>O(N log N) - Linearithmic:</strong> Efficient sorting algorithms (e.g., Merge Sort, Quick Sort).</li>
+        <li><strong>O(N²) - Quadratic:</strong> Nested loops over the input (e.g., Bubble Sort, Insertion Sort).</li>
+      </ul>
+      <p><strong>Space Complexity:</strong> The amount of memory an algorithm needs relative to the input size. Creating a new array of size N requires O(N) space, while modifying a structure in-place requires O(1) space.</p>
+    `,
+    type: "quiz",
+    quiz: [
+      {
+        question: "What is the time complexity of searching for an element in an unsorted array of size N?",
+        options: ["O(1)", "O(log N)", "O(N)", "O(N^2)"],
+        correct: 2,
+        explanation: "In an unsorted array, you may need to scan every element in the worst case, taking O(N) time."
+      },
+      {
+        question: "If an algorithm divides the problem size in half at each step (e.g., Binary Search), what is its time complexity?",
+        options: ["O(1)", "O(log N)", "O(N)", "O(N log N)"],
+        correct: 1,
+        explanation: "Dividing the problem size in half repeatedly yields a logarithmic complexity of O(log N)."
+      },
+      {
+        question: "What is the space complexity of an algorithm that creates a new array of size N to store intermediate values?",
+        options: ["O(1)", "O(log N)", "O(N)", "O(N^2)"],
+        correct: 2,
+        explanation: "Creating a new structure that grows linearly with the input size N requires O(N) auxiliary space."
+      }
+    ],
+    complexity: [
+      { op: "Array Access (by index)", time: "O(1)", space: "O(1)" },
+      { op: "Linear Search", time: "O(N)", space: "O(1)" },
+      { op: "Binary Search", time: "O(log N)", space: "O(1)" },
+      { op: "Nested Loops (i, j to N)", time: "O(N^2)", space: "O(1)" }
+    ]
+  },
+  {
+    id: 2,
+    title: "Arrays & Array Manipulation",
+    icon: "fa-chart-simple",
+    desc: "Understand contiguous memory, indexing, array traversal, and two-pointer techniques.",
+    theory: `
+      <p><strong>What is an Array?</strong> An array is a collection of elements stored in contiguous memory locations. Because memory is contiguous, we can access any element in O(1) time if we know its index.</p>
+      <p><strong>Common Array Operations:</strong></p>
+      <ul>
+        <li><strong>Access:</strong> O(1) (direct lookup using index).</li>
+        <li><strong>Search:</strong> O(N) (checking each element in a linear scan).</li>
+        <li><strong>Insertion / Deletion:</strong> O(N) in the worst case (shifting elements to insert at the beginning or middle).</li>
+      </ul>
+      <p><strong>Two-Pointers Technique:</strong> A highly popular optimization pattern where two pointers traverse the array from different positions (often left and right, or slow and fast) to solve search/pair problems in linear time.</p>
+    `,
+    type: "coding",
+    problems: [21, 17, 1], // Check If Array Is Sorted, Move Zeroes, Two Sum
+    complexity: [
+      { op: "Access element by index", time: "O(1)", space: "O(1)" },
+      { op: "Insert/Delete at start", time: "O(N)", space: "O(1)" },
+      { op: "Search element (linear)", time: "O(N)", space: "O(1)" },
+      { op: "Two-pointer search", time: "O(N)", space: "O(1)" }
+    ]
+  },
+  {
+    id: 3,
+    title: "Strings & Pattern Matching",
+    icon: "fa-font",
+    desc: "Learn character encoding, string reversal, anagrams, and sliding window basics.",
+    theory: `
+      <p><strong>What is a String?</strong> In computer science, a string is a sequence of characters. In many languages, strings are immutable (cannot be changed in-place), meaning operations like concatenation create a new string, taking O(N) time and space.</p>
+      <p><strong>Key String Concepts:</strong></p>
+      <ul>
+        <li><strong>Palindromes:</strong> Strings that read the same backwards (e.g., 'madam'). Often checked using two pointers.</li>
+        <li><strong>Anagrams:</strong> Rearrangement of characters to form another word (e.g., 'listen' and 'silent'). Checked by counting character frequencies (hash maps/frequency arrays).</li>
+        <li><strong>Substring vs Subsequence:</strong> A substring is contiguous; a subsequence is non-contiguous but maintains order.</li>
+      </ul>
+    `,
+    type: "coding",
+    problems: [18, 2], // Valid Anagram, Valid Parentheses
+    complexity: [
+      { op: "Read character by index", time: "O(1)", space: "O(1)" },
+      { op: "String concatenation", time: "O(N + M)", space: "O(N + M)" },
+      { op: "Anagram check (Hash Map)", time: "O(N)", space: "O(k) where k <= 256" },
+      { op: "Substring search (brute-force)", time: "O(N * M)", space: "O(1)" }
+    ]
+  },
+  {
+    id: 4,
+    title: "Recursion Fundamentals",
+    icon: "fa-rotate",
+    desc: "Master the call stack, base cases, and solving problems recursively.",
+    theory: `
+      <p><strong>What is Recursion?</strong> Recursion is a programming technique where a function calls itself directly or indirectly to solve a problem. It works by breaking a problem down into smaller, similar subproblems.</p>
+      <p><strong>The Two Golden Rules of Recursion:</strong></p>
+      <ol>
+        <li><strong>Base Case:</strong> The termination condition that stops the recursion. Without it, you get infinite recursion, causing a stack overflow.</li>
+        <li><strong>Recursive Step:</strong> The logic that progresses towards the base case by calling the function with smaller arguments.</li>
+      </ol>
+      <p><strong>The Call Stack:</strong> Each recursive call pushes a new frame onto the stack. Space complexity is determined by the maximum depth of recursion (O(depth)).</p>
+    `,
+    type: "quiz",
+    quiz: [
+      {
+        question: "What is the purpose of the 'base case' in a recursive function?",
+        options: [
+          "To trigger the recursive call",
+          "To provide a terminating condition that stops recursion",
+          "To optimize the loop runtime",
+          "To clear call stack memory"
+        ],
+        correct: 1,
+        explanation: "The base case is crucial to stop the recursive cycle and prevent infinite execution."
+      },
+      {
+        question: "What happens if a recursive function never reaches its base case?",
+        options: [
+          "It returns undefined immediately",
+          "It converts into a fast iterative loop",
+          "It crashes with a stack overflow error",
+          "It completes in constant space O(1)"
+        ],
+        correct: 2,
+        explanation: "Infinite recursion adds frames to the call stack until it exceeds its limit, throwing a stack overflow error."
+      },
+      {
+        question: "Which data structure is internally used by the execution environment to track recursive calls?",
+        options: ["Queue", "Stack", "Heap", "Tree"],
+        correct: 1,
+        explanation: "The LIFO (Last-In, First-Out) Call Stack manages recursion contexts."
+      }
+    ],
+    complexity: [
+      { op: "Factorial/Fibonacci depth", time: "O(N) or O(2^N)", space: "O(N) (call stack)" },
+      { op: "Binary search recursive", time: "O(log N)", space: "O(log N) (call stack)" }
+    ]
+  },
+  {
+    id: 5,
+    title: "Linked Lists (Singly & Doubly)",
+    icon: "fa-link",
+    desc: "Build dynamic structures, manipulate node pointers, and detect cycles.",
+    theory: `
+      <p><strong>What is a Linked List?</strong> Unlike arrays, linked lists do not store elements in contiguous memory. Instead, each element (node) contains its value and a pointer (reference) to the next node.</p>
+      <p><strong>Why use Linked Lists?</strong> They allow O(1) time insertions and deletions at any point if you already have a reference to that node, and their size can grow dynamically without reallocation overhead.</p>
+      <p><strong>Key Operations:</strong></p>
+      <ul>
+        <li><strong>Access / Search:</strong> O(N) (must traverse from head node step-by-step).</li>
+        <li><strong>Insertion / Deletion:</strong> O(1) (just update next pointers, no shifting required).</li>
+      </ul>
+    `,
+    type: "coding",
+    problems: [10, 3], // Reverse Linked List, Merge Two Sorted Lists
+    complexity: [
+      { op: "Access / Search item", time: "O(N)", space: "O(1)" },
+      { op: "Insert at head / tail", time: "O(1)", space: "O(1)" },
+      { op: "Delete head node", time: "O(1)", space: "O(1)" },
+      { op: "Reverse a Linked List", time: "O(N)", space: "O(1)" }
+    ]
+  },
+  {
+    id: 6,
+    title: "Introduction to Trees",
+    icon: "fa-tree",
+    desc: "Dive into hierarchical data, binary tree structures, and traversal methods (DFS/BFS).",
+    theory: `
+      <p><strong>What is a Tree?</strong> A tree is a hierarchical data structure containing nodes connected by edges. A node can have children but has exactly one parent (except the root node).</p>
+      <p><strong>Binary Tree:</strong> A tree where each node has at most two children (referred to as left child and right child).</p>
+      <p><strong>Binary Search Tree (BST):</strong> A binary tree with a key ordering property: for any node, all values in its left subtree are less, and all values in its right subtree are greater.</p>
+      <p><strong>Tree Traversals:</strong></p>
+      <ul>
+        <li><strong>Depth-First Search (DFS):</strong> Preorder (Root-Left-Right), Inorder (Left-Root-Right - prints BST in sorted order!), Postorder (Left-Right-Root).</li>
+        <li><strong>Breadth-First Search (BFS):</strong> Level-by-level traversal using a queue.</li>
+      </ul>
+    `,
+    type: "coding",
+    problems: [11, 12], // Invert Binary Tree, Validate BST
+    complexity: [
+      { op: "Search in balanced BST", time: "O(log N)", space: "O(log N) (stack)" },
+      { op: "Search in skewed BST", time: "O(N)", space: "O(N) (stack)" },
+      { op: "Invert Binary Tree", time: "O(N)", space: "O(H) where H is height" },
+      { op: "Inorder traversal", time: "O(N)", space: "O(H)" }
+    ]
+  }
+];
+
+let roadmapTabsInitialized = false;
+let currentQuizAnswers = {};
+
 function initRoadmap() {
+  // 1. Initialize tabs & modal close events (only once)
+  if (!roadmapTabsInitialized) {
+    const basicTab = document.getElementById("roadmapBasicTab");
+    const overviewTab = document.getElementById("roadmapOverviewTab");
+    
+    if (basicTab && overviewTab) {
+      basicTab.addEventListener("click", () => {
+        basicTab.classList.add("active");
+        overviewTab.classList.remove("active");
+        document.getElementById("basicRoadmapContainer").classList.add("active");
+        document.getElementById("overviewRoadmapContainer").classList.remove("active");
+      });
+      
+      overviewTab.addEventListener("click", () => {
+        overviewTab.classList.add("active");
+        basicTab.classList.remove("active");
+        document.getElementById("overviewRoadmapContainer").classList.add("active");
+        document.getElementById("basicRoadmapContainer").classList.remove("active");
+      });
+    }
+    
+    // Close button for step modal
+    const closeBtn = document.getElementById("roadmapStepModalClose");
+    const closeBtn2 = document.getElementById("roadmapStepModalCloseBtn");
+    const modal = document.getElementById("roadmapStepModal");
+    
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => modal.classList.remove("active"));
+    }
+    if (closeBtn2) {
+      closeBtn2.addEventListener("click", () => modal.classList.remove("active"));
+    }
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.classList.remove("active");
+      });
+    }
+
+    roadmapTabsInitialized = true;
+  }
+
+  // 2. Render basic roadmap
+  renderBasicRoadmap();
+
+  // 3. Render original stages overview
   const progressBar = document.getElementById("roadmapProgress");
   const stages = document.querySelectorAll(".stage");
+  if (progressBar && stages.length >= 3) {
+    const totalProblems = practiceProblems.length;
+    const completed = userProgress.completedProblems.length;
+    const progress = Math.min((completed / totalProblems) * 100, 100);
 
-  // Calculate progress based on completed problems
-  const totalProblems = practiceProblems.length;
-  const completed = userProgress.completedProblems.length;
-  const progress = Math.min((completed / totalProblems) * 100, 100);
+    setTimeout(() => {
+      progressBar.style.width = `${progress}%`;
 
-  setTimeout(() => {
-    progressBar.style.width = `${progress}%`;
-
-    // Activate stages based on progress
-    if (progress >= 25) stages[0].classList.add("active");
-    if (progress >= 70) stages[1].classList.add("active");
-    if (progress === 100) stages[2].classList.add("active");
-  }, 500);
+      // Activate stages based on progress
+      if (progress >= 25) stages[0].classList.add("active");
+      if (progress >= 70) stages[1].classList.add("active");
+      if (progress === 100) stages[2].classList.add("active");
+    }, 500);
+  }
 }
+
+function isRoadmapStepCompleted(step) {
+  if (step.type === "quiz") {
+    return userProgress.completedRoadmapSteps.includes(step.id);
+  }
+  // For coding steps, check if at least one problem is completed
+  return step.problems.some(pid => userProgress.completedProblems.includes(pid));
+}
+
+function renderBasicRoadmap() {
+  const timeline = document.getElementById("basicRoadmapTimeline");
+  if (!timeline) return;
+
+  let html = "";
+
+  roadmapSteps.forEach((step, index) => {
+    const isCompleted = isRoadmapStepCompleted(step);
+    
+    // Determine if step is unlocked (either step 1 or previous step is completed)
+    let isUnlocked = false;
+    if (index === 0) {
+      isUnlocked = true;
+    } else {
+      const prevStep = roadmapSteps[index - 1];
+      isUnlocked = isRoadmapStepCompleted(prevStep);
+    }
+
+    let statusClass = "locked";
+    let statusText = "Locked";
+    let statusTagClass = "locked-tag";
+
+    if (isCompleted) {
+      statusClass = "completed";
+      statusText = "Completed";
+      statusTagClass = "completed-tag";
+    } else if (isUnlocked) {
+      statusClass = "active";
+      statusText = "Active";
+      statusTagClass = "active-tag";
+    }
+
+    // Calculate progress
+    let progressPercent = 0;
+    let progressText = "";
+    if (step.type === "quiz") {
+      progressPercent = isCompleted ? 100 : 0;
+      progressText = isCompleted ? "Passed" : "Not Started";
+    } else {
+      const totalProblems = step.problems.length;
+      const solvedProblems = step.problems.filter(pid => userProgress.completedProblems.includes(pid)).length;
+      progressPercent = Math.round((solvedProblems / totalProblems) * 100);
+      progressText = `${solvedProblems}/${totalProblems} Solved`;
+    }
+
+    // Determine Step Icon
+    let stepIcon = `<i class="fa-solid ${step.icon}"></i>`;
+    if (isCompleted) {
+      stepIcon = `<i class="fa-solid fa-check"></i>`;
+    } else if (statusClass === "locked") {
+      stepIcon = `<i class="fa-solid fa-lock"></i>`;
+    }
+
+    html += `
+      <div class="roadmap-step ${statusClass}" data-step="${step.id}">
+        <div class="step-marker-dot">
+          ${stepIcon}
+        </div>
+        <div class="roadmap-step-card">
+          <div class="step-card-header">
+            <span class="step-number">Step ${step.id}</span>
+            <span class="step-status-tag ${statusTagClass}">${statusText}</span>
+          </div>
+          <h3 class="step-title">${step.title}</h3>
+          <p class="step-desc">${step.desc}</p>
+          <div class="step-card-footer">
+            <div class="step-progress">
+              <div class="step-progress-label">Progress: ${progressText} (${progressPercent}%)</div>
+              <div class="step-progress-bar-container">
+                <div class="step-progress-bar-fill" style="width: ${progressPercent}%;"></div>
+              </div>
+            </div>
+            ${isUnlocked 
+              ? `<button class="btn btn-primary btn-sm" onclick="openRoadmapStepModal(${index})">${isCompleted ? 'Review Step' : 'Start Step'}</button>`
+              : `<button class="btn btn-secondary btn-sm" disabled><i class="fa-solid fa-lock"></i> Locked</button>`
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  timeline.innerHTML = html;
+}
+
+function selectQuizOption(stepId, qIndex, oIndex, element) {
+  const container = element.closest(".quiz-question-container");
+  container.querySelectorAll(".quiz-option-item").forEach(el => el.classList.remove("selected"));
+  element.classList.add("selected");
+  currentQuizAnswers[qIndex] = oIndex;
+}
+
+function openCodingProblem(problemId) {
+  const modal = document.getElementById("roadmapStepModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+  handleProblemClick(problemId);
+}
+
+function openRoadmapStepModal(stepIndex) {
+  const step = roadmapSteps[stepIndex];
+  if (!step) return;
+
+  const modal = document.getElementById("roadmapStepModal");
+  if (!modal) return;
+
+  currentQuizAnswers = {};
+
+  document.getElementById("roadmapStepBadge").textContent = `Step ${step.id}`;
+  document.getElementById("roadmapStepModalTitle").textContent = step.title;
+  document.getElementById("roadmapStepTheoryContent").innerHTML = step.theory;
+
+  // Render complexity reference if available
+  const complexitySection = document.getElementById("roadmapStepComplexitySection");
+  if (step.complexity && step.complexity.length > 0) {
+    complexitySection.classList.remove("hidden");
+    const body = document.getElementById("roadmapStepComplexityBody");
+    body.innerHTML = step.complexity.map(item => `
+      <tr>
+        <td>${item.op}</td>
+        <td>${item.time}</td>
+        <td>${item.space}</td>
+      </tr>
+    `).join("");
+  } else {
+    complexitySection.classList.add("hidden");
+  }
+
+  // Render quiz section or coding problems section
+  const quizSection = document.getElementById("roadmapStepQuizSection");
+  const problemsSection = document.getElementById("roadmapStepProblemsSection");
+
+  if (step.type === "quiz") {
+    quizSection.classList.remove("hidden");
+    problemsSection.classList.add("hidden");
+
+    const quizContent = document.getElementById("roadmapStepQuizContent");
+    const isCompleted = userProgress.completedRoadmapSteps.includes(step.id);
+
+    quizContent.innerHTML = step.quiz.map((q, qIndex) => {
+      return `
+        <div class="quiz-question-container" data-qindex="${qIndex}">
+          <div class="quiz-question-text">${qIndex + 1}. ${q.question}</div>
+          <ul class="quiz-options-list">
+            ${q.options.map((opt, oIndex) => {
+              let classes = "quiz-option-item";
+              let styleAttr = "";
+              if (isCompleted) {
+                if (oIndex === q.correct) {
+                  classes += " correct";
+                }
+                styleAttr = 'style="pointer-events: none; cursor: default;"';
+              }
+              return `
+                <li class="${classes}" ${styleAttr} data-oindex="${oIndex}" onclick="${isCompleted ? '' : `selectQuizOption(${step.id}, ${qIndex}, ${oIndex}, this)`}">
+                  ${opt}
+                </li>
+              `;
+            }).join("")}
+          </ul>
+          <div class="quiz-feedback ${isCompleted ? 'correct' : 'hidden'}">
+            ${isCompleted ? `Correct! ${q.explanation}` : ''}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    const submitBtn = document.getElementById("roadmapStepSubmitQuizBtn");
+    if (isCompleted) {
+      submitBtn.style.display = "none";
+    } else {
+      submitBtn.style.display = "block";
+      submitBtn.onclick = () => submitRoadmapQuiz(stepIndex);
+    }
+
+  } else {
+    quizSection.classList.add("hidden");
+    problemsSection.classList.remove("hidden");
+
+    const problemsList = document.getElementById("roadmapStepProblemsList");
+    problemsList.innerHTML = step.problems.map(pid => {
+      const prob = practiceProblems.find(p => p.id === pid);
+      if (!prob) return "";
+
+      const isSolved = userProgress.completedProblems.includes(pid);
+      return `
+        <li class="roadmap-problem-item">
+          <div class="roadmap-problem-info">
+            <span class="roadmap-problem-title">${prob.title}</span>
+            <div class="roadmap-problem-meta">
+              <span class="difficulty-badge ${getDifficultyClass(prob.difficulty)}">${prob.difficulty}</span>
+              <span>Acceptance: ${prob.acceptance}</span>
+            </div>
+          </div>
+          <div class="roadmap-problem-action">
+            ${isSolved 
+              ? `<span class="roadmap-problem-status completed"><i class="fas fa-check-circle"></i> Solved</span>`
+              : `<button class="btn btn-outline btn-sm" onclick="openCodingProblem(${pid})"><i class="fas fa-play"></i> Solve</button>`
+            }
+          </div>
+        </li>
+      `;
+    }).join("");
+  }
+
+  modal.classList.add("active");
+}
+
+function submitRoadmapQuiz(stepIndex) {
+  const step = roadmapSteps[stepIndex];
+  const container = document.getElementById("roadmapStepQuizContent");
+  let allCorrect = true;
+  let allAnswered = true;
+
+  step.quiz.forEach((q, qIndex) => {
+    const qContainer = container.querySelector(`[data-qindex="${qIndex}"]`);
+    const selectedOptionIndex = currentQuizAnswers[qIndex];
+    if (selectedOptionIndex === undefined) {
+      allAnswered = false;
+    }
+  });
+
+  if (!allAnswered) {
+    showNotification("Please answer all questions before submitting!", "error");
+    return;
+  }
+
+  step.quiz.forEach((q, qIndex) => {
+    const qContainer = container.querySelector(`[data-qindex="${qIndex}"]`);
+    const feedbackEl = qContainer.querySelector(".quiz-feedback");
+    const selectedOptionIndex = currentQuizAnswers[qIndex];
+
+    qContainer.querySelectorAll(".quiz-option-item").forEach((optEl, oIndex) => {
+      optEl.classList.remove("selected", "correct", "incorrect");
+      optEl.style.pointerEvents = "none";
+      optEl.style.cursor = "default";
+      if (oIndex === q.correct) {
+        optEl.classList.add("correct");
+      } else if (oIndex === selectedOptionIndex) {
+        optEl.classList.add("incorrect");
+      }
+    });
+
+    feedbackEl.classList.remove("hidden", "correct", "incorrect");
+    if (selectedOptionIndex === q.correct) {
+      feedbackEl.textContent = `Correct! ${q.explanation}`;
+      feedbackEl.className = "quiz-feedback correct";
+    } else {
+      allCorrect = false;
+      feedbackEl.textContent = `Incorrect. ${q.explanation}`;
+      feedbackEl.className = "quiz-feedback incorrect";
+    }
+  });
+
+  if (allCorrect) {
+    if (!userProgress.completedRoadmapSteps.includes(step.id)) {
+      userProgress.completedRoadmapSteps.push(step.id);
+      addXP(50);
+      saveUserData();
+      showNotification(`🎉 Quiz Passed! Step ${step.id} Completed. +50 XP!`, "success");
+      
+      updateDashboard();
+      updateGamification();
+      initRoadmap();
+    }
+    
+    const submitBtn = document.getElementById("roadmapStepSubmitQuizBtn");
+    if (submitBtn) {
+      submitBtn.style.display = "none";
+    }
+  } else {
+    showNotification("Some answers were incorrect. Please review the feedback and try again!", "error");
+    // Re-enable quiz elements if incorrect so they can retry
+    setTimeout(() => {
+      step.quiz.forEach((q, qIndex) => {
+        const qContainer = container.querySelector(`[data-qindex="${qIndex}"]`);
+        const feedbackEl = qContainer.querySelector(".quiz-feedback");
+        const selectedOptionIndex = currentQuizAnswers[qIndex];
+        if (selectedOptionIndex !== q.correct) {
+          qContainer.querySelectorAll(".quiz-option-item").forEach((optEl) => {
+            optEl.style.pointerEvents = "auto";
+            optEl.style.cursor = "pointer";
+            optEl.classList.remove("correct", "incorrect");
+            if (optEl.classList.contains("selected")) {
+              optEl.classList.remove("selected");
+            }
+          });
+          feedbackEl.classList.add("hidden");
+          delete currentQuizAnswers[qIndex];
+        }
+      });
+    }, 3000);
+  }
+}
+
+// Bind handlers to global window object
+window.selectQuizOption = selectQuizOption;
+window.submitRoadmapQuiz = submitRoadmapQuiz;
+window.openCodingProblem = openCodingProblem;
+window.openRoadmapStepModal = openRoadmapStepModal;
 
 // ===== PROFILE =====
 function initProfile() {
@@ -3420,6 +3972,11 @@ function loadUserData() {
       // Ensure quizScores exists
       if (!userProgress.quizScores) {
         userProgress.quizScores = {};
+      }
+
+      // Ensure completedRoadmapSteps exists
+      if (!userProgress.completedRoadmapSteps) {
+        userProgress.completedRoadmapSteps = [];
       }
 
       // Sanitize recently viewed problems (can be corrupted in localStorage)
