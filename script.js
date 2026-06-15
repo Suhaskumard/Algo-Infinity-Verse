@@ -4508,6 +4508,118 @@ function initChatbot() {
 
   if (!toggle || !windowEl || !close || !input || !send) return;
 
+  // Inject Doubt Generator toggle switch dynamically into header
+  const header = windowEl.querySelector(".chatbot-header");
+  if (header && !document.getElementById("doubtGenToggle")) {
+    if (!document.getElementById("doubt-gen-styles")) {
+      const styleEl = document.createElement("style");
+      styleEl.id = "doubt-gen-styles";
+      styleEl.textContent = `
+        .doubt-gen-toggle-container {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-left: auto;
+          margin-right: 12px;
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.7);
+          user-select: none;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 4px 8px;
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .doubt-gen-toggle-container span {
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+        .doubt-gen-switch {
+          position: relative;
+          display: inline-block;
+          width: 32px;
+          height: 18px;
+        }
+        .doubt-gen-switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        .doubt-gen-slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(255, 255, 255, 0.15);
+          transition: .3s ease;
+          border-radius: 34px;
+        }
+        .doubt-gen-slider:before {
+          position: absolute;
+          content: "";
+          height: 12px;
+          width: 12px;
+          left: 3px;
+          bottom: 3px;
+          background-color: #fff;
+          transition: .3s ease;
+          border-radius: 50%;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        .doubt-gen-switch input:checked + .doubt-gen-slider {
+          background-color: var(--primary, #8b5cf6);
+          box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+        }
+        .doubt-gen-switch input:checked + .doubt-gen-slider:before {
+          transform: translateX(14px);
+        }
+      `;
+      document.head.appendChild(styleEl);
+    }
+
+    const toggleContainer = document.createElement("div");
+    toggleContainer.className = "doubt-gen-toggle-container";
+    toggleContainer.innerHTML = `
+      <span>Doubt Gen</span>
+      <label class="doubt-gen-switch">
+        <input type="checkbox" id="doubtGenToggle" aria-label="Toggle self-debugging doubt generator mode">
+        <span class="doubt-gen-slider"></span>
+      </label>
+    `;
+    header.insertBefore(toggleContainer, close);
+
+    const toggleInput = document.getElementById("doubtGenToggle");
+    const headerTitle = header.querySelector("h4");
+    if (toggleInput && headerTitle) {
+      toggleInput.addEventListener("change", () => {
+        if (toggleInput.checked) {
+          headerTitle.textContent = "Doubt Generator";
+          showNotification("Self-Debugging Mode Activated! Ask questions to get guided debugging hints.", "success");
+          addChatMessage(
+            `<div style="font-size: 0.85rem; color: #a7f3d0; background: rgba(16, 185, 129, 0.1); border: 1px dashed #10b981; padding: 8px 12px; border-radius: 8px; margin-bottom: 5px;">
+              🔍 <strong>Doubt Generator Enabled</strong><br>
+              Instead of giving you code solutions, I will ask reflective Socratic questions to help you spot and fix bugs yourself!
+             </div>`,
+            "bot",
+            { html: true }
+          );
+        } else {
+          headerTitle.textContent = "Algo Assistant";
+          showNotification("Standard Algo Assistant Mode Activated.", "info");
+          addChatMessage(
+            `<div style="font-size: 0.85rem; color: #c084fc; background: rgba(139, 92, 246, 0.1); border: 1px dashed #a855f7; padding: 8px 12px; border-radius: 8px; margin-bottom: 5px;">
+              💡 <strong>Standard Assistant Enabled</strong><br>
+              I will now provide direct code templates, algorithm explanations, and time/space complexity analysis!
+             </div>`,
+            "bot",
+            { html: true }
+          );
+        }
+      });
+    }
+  }
+
   toggle.addEventListener("click", () => {
     windowEl.classList.toggle("hidden");
     const badge = toggle.querySelector(".chatbot-badge");
@@ -4590,6 +4702,74 @@ function addChatMessage(message, sender, { html = false } = {}) {
 
 function getBotResponse(question) {
   const q = question.toLowerCase();
+
+  const doubtGenToggle = document.getElementById("doubtGenToggle");
+  const isDoubtGenActive = doubtGenToggle && doubtGenToggle.checked;
+
+  if (isDoubtGenActive) {
+    let category = "General";
+    let doubtQuestion = "";
+    let debuggingTip = "";
+
+    // Code snippet detection
+    const isCode = q.includes("{") || q.includes("}") || q.includes("function") || q.includes("def ") || q.includes("for(") || q.includes("while(") || q.includes("let ") || q.includes("const ") || q.includes("var ");
+
+    if (isCode) {
+      category = "Code Analysis";
+      doubtQuestion = "Look closely at your loop/recursion variables. Are they guaranteed to change in every iteration to meet the termination condition, or is there a path that leads to an infinite loop?";
+      debuggingTip = "Trace the value of your loop counters or recursive inputs for the first 3 iterations. Do they move closer to the base/termination case?";
+    } else if (q.includes("sort") || q.includes("bubble") || q.includes("selection") || q.includes("insertion") || q.includes("merge") || q.includes("quick") || q.includes("heap") || q.includes("swap")) {
+      category = "Sorting Algorithms";
+      doubtQuestion = "What happens to equal elements during comparisons? Is your sorting condition preserving their relative order (stable), or could it swap them unnecessarily?";
+      debuggingTip = "Dry-run your sorting condition with a small, duplicate array (e.g., `[2, 2, 1]`) and check if it swaps duplicate elements.";
+    } else if (q.includes("recursion") || q.includes("recursive") || q.includes("fibonacci") || q.includes("factorial") || q.includes("backtrack") || q.includes("stack overflow")) {
+      category = "Recursion & Call Stack";
+      doubtQuestion = "Is your recursion guaranteed to reach the base case? What happens with negative, extremely large, or empty inputs?";
+      debuggingTip = "Add console logs at the very top of your function to print the input values. This lets you trace the sequence of recursive calls.";
+    } else if (q.includes("dp") || q.includes("dynamic programming") || q.includes("memoization") || q.includes("tabulation") || q.includes("knapsack") || q.includes("lcs") || q.includes("coin change")) {
+      category = "Dynamic Programming";
+      doubtQuestion = "How are you defining your subproblem states? Are the base cases of your DP array/table correctly initialized before you start filling it?";
+      debuggingTip = "Draw a small DP table on paper and fill in the first 3 cells manually. Does your transition equation yield the correct values?";
+    } else if (q.includes("tree") || q.includes("bst") || q.includes("graph") || q.includes("node") || q.includes("edge") || q.includes("cycle") || q.includes("bfs") || q.includes("dfs") || q.includes("dijkstra")) {
+      category = "Trees & Graphs";
+      doubtQuestion = "Does your traversal check for cycles or visited nodes? What happens if you run this on a graph with disconnected components or a tree with a null root?";
+      debuggingTip = "Verify that you have initialized a 'visited' set/array to track processed nodes, and verify if root/null checks are at the very beginning.";
+    } else if (q.includes("array") || q.includes("list") || q.includes("index") || q.includes("bounds") || q.includes("empty") || q.includes("null") || q.includes("out of bounds") || q.includes("pointer")) {
+      category = "Arrays & Memory Bounds";
+      doubtQuestion = "What happens if the input is empty or has only one element? Are your loop boundaries (e.g., i < length vs i <= length) safe from off-by-one errors?";
+      debuggingTip = "Manually check the index calculation on the last iteration. Does it access an index equal to the array's length?";
+    } else {
+      category = "General Self-Debugging";
+      doubtQuestion = "What are the exact inputs and outputs you expect? Have you dry-run the logic step-by-step with a pencil and paper?";
+      debuggingTip = "Try explaining your algorithm line-by-line to a 'rubber duck' or writing the steps in simple English comments first.";
+    }
+
+    return `
+      <div class="assistant-response doubt-gen-response">
+        <h4 style="color: var(--accent, #a78bfa);"><i class="fas fa-question-circle"></i> Doubt Generator Mode</h4>
+        
+        <div class="response-section" style="margin-top: 8px;">
+          <strong>Category:</strong> <span class="category-badge" style="background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; color: #c084fc;">${category}</span>
+        </div>
+        
+        <div class="response-section" style="margin-top: 12px; border-left: 3px solid var(--primary, #8b5cf6); padding-left: 10px;">
+          <h5 style="margin: 0 0 4px 0; font-size: 0.9rem; color: var(--accent, #a78bfa);">🔍 Socratic Question:</h5>
+          <p class="socratic-question" style="font-style: italic; color: #f1f5f9; margin: 0; line-height: 1.4;">
+            "${doubtQuestion}"
+          </p>
+        </div>
+
+        <div class="response-section" style="margin-top: 14px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 6px;">
+          <h5 style="margin: 0 0 4px 0; font-size: 0.9rem; color: #10b981;">🛠️ Debugging Tip:</h5>
+          <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; color: #cbd5e1;">${debuggingTip}</p>
+        </div>
+
+        <div class="response-section" style="margin-top: 14px; font-size: 0.75rem; color: var(--text-muted, #94a3b8); border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 8px;">
+          <i class="fas fa-info-circle"></i> <em>Answer the question above to locate the bug. Turn off "Doubt Gen" in the header to get direct solutions.</em>
+        </div>
+      </div>
+    `;
+  }
 
   let response = chatbotResponses["default"];
 
