@@ -1752,19 +1752,11 @@ const chatbotResponses = {
 };
 
 // ===== STATE MANAGEMENT =====
+// ==========================================
+// USER PROGRESS STATE & STORAGE INITIALIZATION
+// ==========================================
+
 let userProgress = {
-
-    name: "Learner",
-    avatar: "🚀",
-    completedProblems: [],
-    xp: 0,
-    level: 1,
-    streak: 0,
-    badges: [],
-    lastActive: null,
-    joinDate: null, // Will be set on first load
-    quizScores: {}, // topic -> { bestScore, attempts, totalXP }
-
   name: "Learner",
   avatar: "🚀",
   completedProblems: [],
@@ -1776,9 +1768,8 @@ let userProgress = {
     greedyCount: 0,
     overOptimizerCount: 0
   },
-
-  favoriteProblems: [], //here i have added a new property to store the user's favorite problems
-  recentProblems: [], //here i have added a new property to store the user's recent problems
+  favoriteProblems: [], 
+  recentProblems: [], 
   problemNotes: {},
   xp: 0,
   level: 1,
@@ -1786,18 +1777,164 @@ let userProgress = {
   freezes: 0,
   freezeHistory: [],
   badges: [],
-  completedRoadmapSteps: [], // Store completed roadmap step IDs (e.g., [1] for Step 1)
+  completedRoadmapSteps: [], 
   lastActive: null,
-  quizScores: {}, // topic -> { bestScore, attempts, totalXP }
+  quizScores: {}, 
   bestQuizTimes: {},
-  activityData: {}, // date-string -> count (e.g. "2026-06-05" -> 3)
+  activityData: {}, 
   mistakeDna: {
     offByOneCount: 0,
     recursionBaseCaseCount: 0,
     wrongLogicCount: 0,
     recentLogs: []
+  },
+  
+  // ======= SPACED REPETITION STATE =======
+  revisionSchedule: {
+    arrays: { currentStage: 0, nextReviewDate: null, history: [] },
+    strings: { currentStage: 0, nextReviewDate: null, history: [] },
+    linkedlist: { currentStage: 0, nextReviewDate: null, history: [] },
+    trees: { currentStage: 0, nextReviewDate: null, history: [] },
+    graphs: { currentStage: 0, nextReviewDate: null, history: [] },
+    dp: { currentStage: 0, nextReviewDate: null, history: [] }
   }
 };
+
+if (localStorage.getItem("algoInfinityVerse")) {
+  try {
+    const loadedProgress = JSON.parse(localStorage.getItem("algoInfinityVerse"));
+    if (loadedProgress && typeof loadedProgress === "object") {
+      
+      Object.assign(userProgress, loadedProgress);
+      
+      if (loadedProgress.quizScores) {
+        userProgress.quizScores = { 
+          ...(userProgress.quizScores || {}), 
+          ...loadedProgress.quizScores 
+        };
+      }
+      
+      if (!userProgress.revisionSchedule) {
+        userProgress.revisionSchedule = {};
+      }
+
+      const defaultTopics = ["arrays", "strings", "linkedlist", "trees", "graphs", "dp"];
+      defaultTopics.forEach(topic => {
+        if (!userProgress.revisionSchedule[topic] || typeof userProgress.revisionSchedule[topic] !== 'object') {
+          userProgress.revisionSchedule[topic] = { 
+            currentStage: 0, 
+            nextReviewDate: null, 
+            history: [] 
+          };
+        }
+      });
+
+    }
+  } catch (error) {
+    console.error("Error parsing local storage progress initialization:", error);
+  }
+}
+
+// ==========================================
+// SPACED REPETITION CORE ENGINE (PHASE 2)
+// ==========================================
+
+const REVISION_INTERVALS = [1, 3, 7, 14]; // Intervals in days
+
+/**
+ * Calculates and schedules the next review date for a given DSA topic.
+ * @param {string} topicId - The ID of the topic (e.g., 'arrays', 'strings', 'linkedlist')
+ */
+function scheduleNextRevision(topicId) {
+  // Guard clause to prevent errors if the schema isn't found
+  if (!userProgress.revisionSchedule || !userProgress.revisionSchedule[topicId]) {
+    console.error(`Topic ID "${topicId}" was not found in the revision schedule schema.`);
+    return;
+  }
+
+  const now = new Date();
+  const schedule = userProgress.revisionSchedule[topicId];
+  
+  // // Look up how many days to add based on the user's current repetition tier
+// FIX: Clamp currentStage using Math.min to prevent out-of-bounds array index errors
+const maxIntervalIndex = REVISION_INTERVALS.length - 1;
+const safeStageIndex = Math.min(Math.max(0, schedule.currentStage), maxIntervalIndex);
+
+const daysToAdd = REVISION_INTERVALS[safeStageIndex] || 1;
+
+// // Compute the exact calendar target date
+const nextDate = new Date();
+// Ensure 'now' or a fallback Date object is cleanly accessible for calculation math stability
+const referenceDate = (typeof now !== 'undefined' && now instanceof Date) ? now : new Date();
+nextDate.setDate(referenceDate.getDate() + daysToAdd);
+
+  // Build a timestamped audit log for the review history requirement
+  const logEntry = {
+    reviewedAt: now.toISOString(),
+    stageCompleted: schedule.currentStage,
+    daysCalculated: daysToAdd,
+    nextReviewDueDate: nextDate.toISOString()
+  };
+  
+  // Mutate state updates
+  schedule.nextReviewDate = nextDate.toISOString();
+  schedule.history.push(logEntry);
+
+  // Cycle to the next interval tier, capping at index 3 (14 days max)
+  if (schedule.currentStage < REVISION_INTERVALS.length - 1) {
+    schedule.currentStage++;
+  }
+
+  // Centralized profile save path execution
+if (typeof saveUserData === "function") {
+  saveUserData();
+} else {
+  // Safe local browser fallback if execution context changes
+  localStorage.setItem("algoInfinityVerse", JSON.stringify(userProgress));
+}
+  
+  console.log(`[Scheduler] ${topicId} successfully scheduled. Next review in ${daysToAdd} days (${nextDate.toLocaleDateString()}).`);
+}
+
+// ==========================================
+// UI INJECTION & EVENT HANDLING (PHASE 3)
+// ==========================================
+
+/**
+ * Automatically injects a Spaced Repetition status badge next to the problem container headers.
+ * @param {string} topicId - The active page topic (e.g., 'arrays', 'strings')
+ */
+
+/**
+ * Hook to execute whenever a user finishes a quiz successfully.
+ * Call this inside your existing quiz completion logic handlers!
+ */
+function handleQuizCompletionForRevision(topicId, scorePercentage) {
+  // If user passes with a safe margin (e.g., 70% or higher), advance their schedule
+  if (scorePercentage >= 70) {
+    scheduleNextRevision(topicId);
+    // Refresh the UI to reflect the immediate date changes
+    injectRevisionSchedulerUI(topicId);
+  }
+}
+
+// Automatically scan and run the UI injection on page load
+window.addEventListener("DOMContentLoaded", () => {
+  // Automatically identify the active topic context from the window path URL string
+  const currentPath = window.location.pathname.toLowerCase();
+  let detectedTopic = null;
+
+  if (currentPath.includes("array")) detectedTopic = "arrays";
+  else if (currentPath.includes("string")) detectedTopic = "strings";
+  else if (currentPath.includes("linkedlist")) detectedTopic = "linkedlist";
+  else if (currentPath.includes("tree")) detectedTopic = "trees";
+  else if (currentPath.includes("graph")) detectedTopic = "graphs";
+  else if (currentPath.includes("dp") || currentPath.includes("dynamic")) detectedTopic = "dp";
+
+  if (detectedTopic) {
+    injectRevisionSchedulerUI(detectedTopic);
+  }
+});
 
 
 // ===== QUIZ EDITOR (state) =====
@@ -2783,6 +2920,9 @@ function finishQuiz() {
 
   record.totalXP += xpEarned;
 
+  if (typeof handleQuizCompletionForRevision === "function") {
+    handleQuizCompletionForRevision(topicKey, percentage);
+  }
   saveUserData();
   document.getElementById("topicQuizQuestionText").style.display = "none";
   document.getElementById("topicQuizOptions").style.display = "none";
@@ -7391,4 +7531,63 @@ function renderMistakeDnaCard() {
       </div>
     </div>
   `;
+}
+
+/**
+ * Automatically injects a Spaced Repetition status badge into the main learning context header.
+ * @param {string} topicId - The active page topic (e.g., 'arrays', 'strings')
+ */
+function injectRevisionSchedulerUI(topicId) {
+  if (!userProgress.revisionSchedule || !userProgress.revisionSchedule[topicId]) return;
+
+  // Exact target identification for your custom UI layout structure
+  const targetHeader = document.querySelector(".arr-lesson-header") || 
+                       document.querySelector("h3") || 
+                       document.querySelector("h2");
+
+  if (!targetHeader) {
+    console.warn("[Scheduler UI] Learning title target element not found on this view layer.");
+    return;
+  }
+
+  // Prevent multiple badge components from stacking up
+  const existingCard = document.getElementById("revision-scheduler-badge");
+  if (existingCard) existingCard.remove();
+
+  const schedule = userProgress.revisionSchedule[topicId];
+  const now = new Date();
+  let dynamicStatusHTML = "";
+
+  if (!schedule.nextReviewDate) {
+    dynamicStatusHTML = `<span class="rev-badge rev-new">🆕 Not Scheduled Yet</span>`;
+  } else {
+    const nextDate = new Date(schedule.nextReviewDate);
+    if (now >= nextDate) {
+      dynamicStatusHTML = `<span class="rev-badge rev-due">⚡ Review Due Now!</span>`;
+    } else {
+      const formattedDate = nextDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      dynamicStatusHTML = `<span class="rev-badge rev-waiting">📅 Next Review: ${formattedDate}</span>`;
+    }
+  }
+
+  // Render container with inline utility margin overrides to look native on the header array grid
+  const schedulerContainer = document.createElement("div");
+  schedulerContainer.id = "revision-scheduler-badge";
+  schedulerContainer.className = "revision-scheduler-card";
+  schedulerContainer.setAttribute("aria-live", "polite");
+  schedulerContainer.style.maxWidth = "600px";
+  schedulerContainer.style.marginTop = "1rem";
+  schedulerContainer.innerHTML = `
+    <div class="rev-card-content">
+      <div class="rev-info">
+        <span class="rev-title">🔄 Spaced Repetition Scheduler</span>
+        <span class="rev-stage">Stage ${schedule.currentStage}/4</span>
+      </div>
+      ${dynamicStatusHTML}
+    </div>
+    <div class="rev-history-text">History Track: ${schedule.history.length} completion checkpoints verified</div>
+  `;
+
+  // Mount cleanly directly right beneath your main page introduction title!
+  targetHeader.parentNode.insertBefore(schedulerContainer, targetHeader.nextSibling);
 }
