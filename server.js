@@ -9,9 +9,10 @@ import { extractResumeText } from "./backend/resume-analyzer/parser.js";
 import { calculateATS } from "./backend/resume-analyzer/atsScore.js";
 import { findMissingSkills } from "./backend/resume-analyzer/skills.js";
 import { getSuggestions } from "./backend/resume-analyzer/suggestions.js";
+import { Server as SocketIOServer } from "socket.io";
 
 const upload = multer({ storage: multer.memoryStorage() }).single("resume");
-
+const userSocketMap = new Map();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = __dirname;
@@ -1329,11 +1330,93 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+// --- PHASE 1 ADDITION: SOCKET.IO LOGIC ---
+const io = new SocketIOServer(server);
+
+io.on("connection", (socket) => {
+console.log("🟢 New client connected:", socket.id);
+
+ 
+
+// Draw events (whiteboard)
+socket.on('draw', (data) => {
+    // Broadcast to everyone else in the room
+    socket.to(data.roomId).emit('receive-draw', data);
+});
+
+// Clear board
+socket.on('clear-board', ({ roomId }) => {
+    socket.to(roomId).emit('receive-clear');
+});
+
+// Shared notes
+socket.on('share-notes', ({ roomId, text }) => {
+    socket.to(roomId).emit('receive-notes', text);
+});
+
+// Chat messages
+socket.on('chat-message', (data) => {
+    socket.to(data.roomId).emit('chat-message', data);
+});
+
+// ── VOICE CHAT (WebRTC signaling) ──
+
+socket.on('voice-join', ({ roomId, userId }) => {
+    socket.to(roomId).emit('voice-user-joined', { userId });
+});
+
+socket.on('voice-leave', ({ roomId, userId }) => {
+    socket.to(roomId).emit('voice-user-left', { userId });
+});
+
+// WebRTC offer
+socket.on('voice-offer', ({ roomId, offer, to, from }) => {
+    const targetSocketId = userSocketMap.get(to);
+    if (targetSocketId) io.to(targetSocketId).emit('voice-offer', { offer, from });
+});
+
+socket.on('voice-answer', ({ roomId, answer, to, from }) => {
+    const targetSocketId = userSocketMap.get(to);
+    if (targetSocketId) io.to(targetSocketId).emit('voice-answer', { answer, from });
+});
+
+socket.on('voice-ice', ({ roomId, candidate, to, from }) => {
+    const targetSocketId = userSocketMap.get(to);
+    if (targetSocketId) io.to(targetSocketId).emit('voice-ice', { candidate, from });
+});
+
+// ── END OF ADDITIONS ──
+
+
+  socket.on("join-room", (roomId, userId) => {
+      socket.join(roomId);
+      // Store user mapping
+    userSocketMap.set(userId, socket.id);
+    socket.userId = userId;
+    socket.roomId = roomId;
+     console.log(`👥 User ${userId} joined Room ${roomId}`);
+      
+      socket.to(roomId).emit("user-connected", userId);
+
+      socket.on("disconnect", () => {
+    if (socket.userId) {
+        userSocketMap.delete(socket.userId);
+        if (socket.roomId) {
+            socket.to(socket.roomId).emit("user-disconnected", socket.userId);
+        }
+    }
+});
+  });
+});
+// -----------------------------------------
+
 export { server };
 if (process.env.VERCEL === "1") {
   db = initializeFirebase();
   useFirestore = !!db;
 }
+
+
 
 if (process.env.VERCEL !== "1") {
   loadEnvFile()
