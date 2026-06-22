@@ -1,7 +1,8 @@
-import { initLoader } from "./modules/loader.js";
-import { initTheme } from "./modules/theme.js";
-import { initNavbar } from "./modules/navbar.js";
-import { initScrollTop } from "./modules/scrollTop.js";
+import { initLoader } from "/modules/loader.js";
+import { initTheme } from "/modules/theme.js";
+import { initNavbar } from "/modules/navbar.js";
+import { initScrollTop } from "/modules/scrollTop.js";
+import { escapeHtml } from "/modules/domSanitizer.js";
 
 // DSA Topics database for progress calculation
 const dsaTopics = [
@@ -144,14 +145,14 @@ function populateProfileInfo() {
   
   if (emailEl) {
     if (userProgress.email) {
-      emailEl.innerHTML = `<i class="fas fa-envelope"></i> ${userProgress.email}`;
+      emailEl.innerHTML = `<i class="fas fa-envelope"></i> ${escapeHtml(userProgress.email)}`;
     } else {
       emailEl.innerHTML = `<i class="fas fa-envelope"></i> Not Provided`;
     }
   }
   
   if (joinDateEl) {
-    joinDateEl.innerHTML = `<i class="fas fa-calendar-alt"></i> Joined: ${formatDate(userProgress.joinDate)}`;
+    joinDateEl.innerHTML = `<i class="fas fa-calendar-alt"></i> Joined: ${escapeHtml(formatDate(userProgress.joinDate))}`;
   }
 }
 
@@ -290,14 +291,14 @@ async function initResumeAnalyzer(){
 
       document.getElementById("missingSkills").innerHTML = 
         data.missingSkills && data.missingSkills.length > 0
-          ? data.missingSkills.map(skill => `<li>${skill}</li>`).join("")
+          ? data.missingSkills.map(skill => `<li>${escapeHtml(skill)}</li>`).join("")
           : `<li style="border-left-color: #9ca3af; color: #9ca3af; background: rgba(156, 163, 175, 0.1);">No missing skills found!</li>`;
 
 
 
       document.getElementById("resumeSuggestions").innerHTML = 
         data.suggestions && data.suggestions.length > 0
-          ? data.suggestions.map(item => `<li>${item}</li>`).join("")
+          ? data.suggestions.map(item => `<li>${escapeHtml(item)}</li>`).join("")
           : `<li style="border-left-color: #9ca3af; color: #9ca3af; background: rgba(156, 163, 175, 0.1);">Looking great! No suggestions.</li>`;
 
 
@@ -386,7 +387,8 @@ function initJsonUpload() {
 
   function showMessage(msg, isError = false) {
     if(!messageEl) return;
-    messageEl.innerHTML = isError ? `<i class="fas fa-exclamation-circle"></i> ${msg}` : `<i class="fas fa-check-circle"></i> ${msg}`;
+    const iconClass = isError ? "fa-exclamation-circle" : "fa-check-circle";
+    messageEl.innerHTML = `<i class="fas ${iconClass}"></i> ${escapeHtml(msg)}`;
     messageEl.style.display = "block";
     messageEl.className = "upload-message " + (isError ? "error" : "success");
     setTimeout(() => {

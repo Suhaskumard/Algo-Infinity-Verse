@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "echo 'No build step required'"
+    "build": "echo 'No build step required'",
+    "test": "node --test"
   },
   "keywords": [
     "dsa",
@@ -31,5 +32,6 @@
     "peer": "^1.0.2",
     "socket.io": "^4.8.3",
     "uuid": "^14.0.1"
+    "puppeteer": "^25.1.0",
   }
 }
