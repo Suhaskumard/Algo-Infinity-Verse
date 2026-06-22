@@ -398,7 +398,6 @@ async function handleApi(req, res, pathname) {
     }
   }
 
-<<<<<<< HEAD
   // Bulk Audit APIs
   if (pathname === "/api/audit/bulk" && req.method === "POST") {
     try {
@@ -442,9 +441,6 @@ async function handleApi(req, res, pathname) {
     }
     return sendJson(res, 200, progress);
   }
-
-=======
->>>>>>> fee20385e5f96f7ce165a8686387ac01b20163ac
   if (pathname === "/api/session" && req.method === "GET") {
     const session = getSession(req);
     return sendJson(res, 200, {
