@@ -9,6 +9,7 @@ import { extractResumeText } from "./backend/resume-analyzer/parser.js";
 import { calculateATS } from "./backend/resume-analyzer/atsScore.js";
 import { findMissingSkills } from "./backend/resume-analyzer/skills.js";
 import { getSuggestions } from "./backend/resume-analyzer/suggestions.js";
+import { fetchWorkflows, analyzeWorkflow } from "./backend/repository-analyzer/cicdValidator.js";
 import { Server as SocketIOServer } from "socket.io";
 
 const upload = multer({ storage: multer.memoryStorage() }).single("resume");
@@ -559,6 +560,59 @@ async function handleApi(req, res, pathname) {
         return sendJson(res, 400, { error: "Unsupported file type. Upload PDF or DOCX." });
       }
       return sendJson(res, 500, { error: "Failed to analyze resume." });
+    }
+  }
+
+  if (pathname === "/api/analyze-repository" && req.method === "POST") {
+    try {
+      const payload = await readJsonBody(req);
+      const { repoUrl } = payload;
+      
+      if (!repoUrl || !repoUrl.includes("github.com")) {
+        return sendJson(res, 400, { error: "Please provide a valid GitHub repository URL." });
+      }
+
+      const workflows = await fetchWorkflows(repoUrl);
+      
+      if (workflows.length === 0) {
+        return sendJson(res, 200, {
+          score: 0,
+          workflowsAnalyzed: 0,
+          details: { hasDependencies: false, hasTests: false },
+          recommendations: ["No GitHub Actions workflows found in .github/workflows. Add a CI/CD pipeline to automate testing."]
+        });
+      }
+
+      let bestScore = -1;
+      let overallDeps = false;
+      let overallTests = false;
+
+      for (const wf of workflows) {
+        const result = analyzeWorkflow(wf.content);
+        if (result.score > bestScore) bestScore = result.score;
+        if (result.hasDependencies) overallDeps = true;
+        if (result.hasTests) overallTests = true;
+      }
+
+      const recommendations = [];
+      if (bestScore === 20) recommendations.push("Workflows found, but they contain no functional jobs or steps.");
+      if (bestScore === 50) recommendations.push("Add explicit testing commands (like 'npm test') to your workflow.");
+      if (bestScore === 75) recommendations.push("Ensure dependencies are installed securely before running tests.");
+      if (bestScore === 100) recommendations.push("Excellent! Fully functional CI/CD pipeline detected.");
+
+      return sendJson(res, 200, {
+        score: bestScore,
+        workflowsAnalyzed: workflows.length,
+        details: {
+          hasDependencies: overallDeps,
+          hasTests: overallTests
+        },
+        recommendations
+      });
+
+    } catch (err) {
+      console.error("Repository analysis error:", err.message);
+      return sendJson(res, 500, { error: "Failed to analyze repository. " + err.message });
     }
   }
 
