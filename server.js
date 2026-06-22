@@ -441,6 +441,7 @@ async function handleApi(req, res, pathname) {
     }
     return sendJson(res, 200, progress);
   }
+
   if (pathname === "/api/session" && req.method === "GET") {
     const session = getSession(req);
     return sendJson(res, 200, {
