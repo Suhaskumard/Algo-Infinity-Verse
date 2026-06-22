@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import { fetchWorkflows, analyzeWorkflow } from '../repository-analyzer/cicdValidator.js';
+import { analyzeWorkflow } from '../repository-analyzer/cicdValidator.js';
+import { VCSFactory } from '../vcs/VCSFactory.js';
 import { batchStore } from './queue.js';
 
 // Use same Redis connection configuration
@@ -16,19 +17,20 @@ const redisConnection = new IORedis(process.env.REDIS_URL || 'redis://127.0.0.1:
 export const auditWorker = new Worker('bulk-audit-queue', async (job) => {
   const { batchId, repoUrl } = job.data;
   
-  if (!repoUrl || !repoUrl.includes("github.com")) {
-    throw new Error("Invalid GitHub URL");
+  if (!repoUrl || (!repoUrl.includes("github.com") && !repoUrl.includes("gitlab.com") && !repoUrl.includes("bitbucket.org"))) {
+    throw new Error("Unsupported or Invalid URL");
   }
 
   try {
-    // 1. Fetch workflows from GitHub
-    const workflows = await fetchWorkflows(repoUrl);
+    // 1. Fetch normalized workflows using VCSFactory
+    const provider = VCSFactory.getProvider(repoUrl);
+    const workflows = await provider.getNormalizedWorkflows();
     
     // 2. Analyze workflows
     let bestScore = 0;
     if (workflows.length > 0) {
       for (const wf of workflows) {
-        const result = analyzeWorkflow(wf.content);
+        const result = analyzeWorkflow(wf.commands);
         if (result.score > bestScore) bestScore = result.score;
       }
     }
