@@ -10,9 +10,14 @@ import { calculateATS } from "./backend/resume-analyzer/atsScore.js";
 import { findMissingSkills } from "./backend/resume-analyzer/skills.js";
 import { getSuggestions } from "./backend/resume-analyzer/suggestions.js";
 import { fetchWorkflows, analyzeWorkflow } from "./backend/repository-analyzer/cicdValidator.js";
+import { enqueueBulkAudit, getBatchProgress } from "./backend/jobs/queue.js";
+import "./backend/jobs/worker.js"; // Initialize worker
+import { parse as csvParse } from "csv-parse/sync";
+import { v4 as uuidv4 } from "uuid";
 import { Server as SocketIOServer } from "socket.io";
 
 const upload = multer({ storage: multer.memoryStorage() }).single("resume");
+const uploadCsv = multer({ storage: multer.memoryStorage() }).single("csv");
 const userSocketMap = new Map();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -614,6 +619,50 @@ async function handleApi(req, res, pathname) {
       console.error("Repository analysis error:", err.message);
       return sendJson(res, 500, { error: "Failed to analyze repository. " + err.message });
     }
+  }
+
+  // Bulk Audit APIs
+  if (pathname === "/api/audit/bulk" && req.method === "POST") {
+    try {
+      uploadCsv(req, res, async (err) => {
+        if (err) return sendJson(res, 500, { error: "Upload error." });
+        if (!req.file) return sendJson(res, 400, { error: "No CSV file uploaded." });
+        
+        try {
+          const records = csvParse(req.file.buffer.toString('utf-8'), { columns: false, skip_empty_lines: true });
+          // Extract repo URLs from the first column
+          const repoUrls = records.map(row => row[0]).filter(url => url && url.includes("github.com"));
+          
+          if (repoUrls.length === 0) {
+            return sendJson(res, 400, { error: "No valid GitHub URLs found in the CSV." });
+          }
+
+          const batchId = uuidv4();
+          await enqueueBulkAudit(batchId, repoUrls);
+
+          return sendJson(res, 202, {
+            message: "Bulk audit accepted and queued.",
+            batchId,
+            totalJobs: repoUrls.length
+          });
+        } catch (parseErr) {
+          console.error("CSV Parse Error:", parseErr);
+          return sendJson(res, 400, { error: "Failed to parse CSV file." });
+        }
+      });
+      return; // Async multer
+    } catch (err) {
+      return sendJson(res, 500, { error: "Failed to queue bulk audit." });
+    }
+  }
+
+  if (pathname.startsWith("/api/audit/bulk/") && req.method === "GET") {
+    const batchId = pathname.split("/").pop();
+    const progress = getBatchProgress(batchId);
+    if (!progress) {
+      return sendJson(res, 404, { error: "Batch not found." });
+    }
+    return sendJson(res, 200, progress);
   }
 
   if (pathname === "/api/session" && req.method === "GET") {
