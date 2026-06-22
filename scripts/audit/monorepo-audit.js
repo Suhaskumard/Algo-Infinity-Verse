@@ -41,14 +41,10 @@ export function detectWorkspaceConfigs(rootDir) {
     // Check for pnpm workspace
     if (fs.existsSync(path.join(rootDir, 'pnpm-workspace.yaml'))) {
         type = type === 'single-project' ? 'monorepo-pnpm' : type;
-        try {
-            const pnpmYaml = fs.readFileSync(path.join(rootDir, 'pnpm-workspace.yaml'), 'utf8');
-            const matches = pnpmYaml.match(/-\s+'([^']+)'/g);
-            if (matches) {
-                patterns.push(...matches.map(m => m.replace(/-\s+['"]?/, '').replace(/['"]?$/, '')));
-            }
-        } catch (e) {
-            console.warn(`Failed to parse pnpm-workspace.yaml: ${e.message}`);
+        const pnpmYaml = fs.readFileSync(path.join(rootDir, 'pnpm-workspace.yaml'), 'utf8');
+        const matches = pnpmYaml.match(/-\s+'([^']+)'/g);
+        if (matches) {
+            patterns.push(...matches.map(m => m.replace(/-\s+'?/, '').replace(/'$/, '')));
         }
     }
 
@@ -123,12 +119,8 @@ export function auditProject(projectPath) {
 
     if (fs.existsSync(path.join(projectPath, 'package.json'))) {
         findings.hasPackageJson = true;
-        try {
-            const pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8'));
-            findings.dependencies = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.devDependencies || {}));
-        } catch (e) {
-            console.warn(`Failed to parse package.json at ${projectPath}: ${e.message}`);
-        }
+        const pkg = JSON.parse(fs.readFileSync(path.join(projectPath, 'package.json'), 'utf8'));
+        findings.dependencies = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.devDependencies || {}));
     }
 
     findings.hasTsConfig = fs.existsSync(path.join(projectPath, 'tsconfig.json'));
