@@ -2420,3 +2420,15 @@ async function runPerl() {
   isRunning = false;
 }
 
+
+
+// Inject Report Issue Feature on educational pages
+document.addEventListener('DOMContentLoaded', () => {
+  const path = window.location.pathname;
+  if (path.includes('/pages/learning/') || path.includes('/pages/visualizers/') || path.includes('/pages/resources/')) {
+    const script = document.createElement('script');
+    script.src = '/scripts/report-issue.js';
+    document.body.appendChild(script);
+  }
+});
+
