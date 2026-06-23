@@ -416,11 +416,9 @@ function stRenderArray() {
   }
 
   for (var i = 0; i < stState.n; i++) {
-    var cell = document.createElement('button');
-    cell.type = 'button';
+    var cell = document.createElement('div');
     cell.className = 'st-array-cell ' + cellClasses[i];
     cell.setAttribute('data-idx', i);
-    cell.setAttribute('aria-label', 'Update index ' + i + ', current value ' + stState.arr[i]);
     
     if (stState.hoveredIndex === i) {
       cell.classList.add('highlight-active');
@@ -734,12 +732,11 @@ function stPromptUpdate(idx) {
   var inputVal = prompt('Enter new value for index ' + idx + ' (current value: ' + currentVal + '):', currentVal);
   if (inputVal === null) return;
   
-  var trimmedInput = inputVal.trim();
-  if (!/^-?\d+$/.test(trimmedInput)) {
+  var val = parseInt(inputVal.trim());
+  if (isNaN(val)) {
     alert('Please enter a valid integer.');
     return;
   }
-  var val = Number(trimmedInput);
   
   var idxEl = document.getElementById('stUpdateIdx');
   var valEl = document.getElementById('stUpdateVal');
