@@ -49,6 +49,8 @@ async function runTests() {
         }, { timeout: 5000 });
     } catch (e) {
         console.error("Timeout waiting for image to load");
+        process.exitCode = 1;
+        throw e;
     }
 
     console.log("\n--- Checking state after scrolling ---");
