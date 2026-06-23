@@ -8,23 +8,28 @@ let useFirestore = false;
 
 function initFirebase() {
   if (getApps().length > 0) {
-    db = getFirestore();
-    useFirestore = true;
+    try {
+      db = getFirestore();
+      useFirestore = true;
+    } catch (e) {
+      console.warn("Firestore unavailable:", e);
+    }
     return;
   }
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  if (!projectId || !clientEmail || !privateKey) {
-    console.warn("Firebase Admin credentials not set.");
-    return;
+  if (clientEmail && privateKey) {
+    try {
+      initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
+      db = getFirestore();
+      useFirestore = true;
+    } catch (e) {
+      console.error("Firebase init error:", e);
+    }
   }
-  try {
-    initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
-    db = getFirestore();
-    useFirestore = true;
-  } catch (e) {
-    console.error("Firebase init error:", e);
+  if (getApps().length === 0 && projectId) {
+    initializeApp({ projectId });
   }
 }
 initFirebase();
@@ -63,7 +68,7 @@ async function readUsers() {
   if (!useFirestore) return [];
   try {
     const snap = await db.collection("users").get();
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
   } catch (e) { console.error(e); return []; }
 }
 

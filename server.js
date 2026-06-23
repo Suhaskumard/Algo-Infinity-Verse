@@ -136,7 +136,7 @@ async function getUserByEmail(email) {
     .limit(1)
     .get();
   if (snapshot.empty) return null;
-  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+  return { ...snapshot.docs[0].data(), id: snapshot.docs[0].id };
 }
 
 async function createUser(userData) {
@@ -147,7 +147,7 @@ async function createUser(userData) {
     return userData;
   }
   const docRef = await db.collection(COLLECTIONS.USERS).add(userData);
-  return { id: docRef.id, ...userData };
+  return { ...userData, id: docRef.id };
 }
 
 async function ensureUserStore() {
@@ -589,7 +589,21 @@ async function handleApi(req, res, pathname) {
         return sendJson(res, 400, { error: "Missing idToken" });
       }
 
+      const { getApps, initializeApp, cert } = await import("firebase-admin/app");
       const { getAuth } = await import("firebase-admin/auth");
+
+      if (getApps().length === 0) {
+        const projectId = process.env.FIREBASE_PROJECT_ID;
+        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+        const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+        if (clientEmail && privateKey) {
+          initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
+        } else if (projectId) {
+          initializeApp({ projectId });
+        } else {
+          return sendJson(res, 500, { error: "Firebase is not configured for authentication." });
+        }
+      }
 
       let decoded;
       try {
@@ -610,7 +624,7 @@ async function handleApi(req, res, pathname) {
           .limit(1)
           .get();
         if (!snapshot.empty) {
-          user = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+          user = { ...snapshot.docs[0].data(), id: snapshot.docs[0].id };
         } else {
           const emailSnapshot = await db
             .collection(COLLECTIONS.USERS)
@@ -618,7 +632,7 @@ async function handleApi(req, res, pathname) {
             .limit(1)
             .get();
           if (!emailSnapshot.empty) {
-            user = { id: emailSnapshot.docs[0].id, ...emailSnapshot.docs[0].data() };
+            user = { ...emailSnapshot.docs[0].data(), id: emailSnapshot.docs[0].id };
           }
         }
       } else {
