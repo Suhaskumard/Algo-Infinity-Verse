@@ -258,7 +258,6 @@ async function readJsonBody(req) {
 function sendJson(res, status, body, headers = {}) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     ...headers,
   });
   res.end(JSON.stringify(body));
@@ -685,7 +684,7 @@ async function handleApi(req, res, pathname) {
       }, { "Set-Cookie": cookie });
 
     } catch (error) {
-      console.error("Google auth error:", error);
+      console.error("Google auth error:", error.message || error);
       return sendJson(res, 500, { error: "Internal server error" });
     }
   }
@@ -1568,9 +1567,8 @@ async function serveStatic(req, res, pathname) {
       "Content-Type": mimeTypes[ext] || "application/octet-stream",
       "X-Content-Type-Options": "nosniff",
     };
-    if (ext === ".html") {
-      headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups";
-    }
+    // Note: COOP header removed to allow Firebase signInWithPopup to access popup.closed
+    // when opening cross-origin OAuth popups (Google, etc.)
     res.writeHead(200, headers);
     res.end(content);
   } catch {
