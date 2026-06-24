@@ -9,7 +9,7 @@ test.describe('Authentication Flow', () => {
     await expect(page).toHaveTitle(/Algo Infinity Verse/);
     
     // Check if the navbar placeholder is visible
-    await expect(page.locator('#navbar-placeholder')).toBeVisible();
+    await expect(page.locator('#navbar-placeholder .navbar')).toBeVisible();
 
     // Check if hero section is visible
     await expect(page.locator('.hero-content')).toBeVisible();
