@@ -275,6 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // The simulation engine has been moved to a shared module. This function is deprecated and removed.
   // Use runSimulation from '../../common/engine/simulator.js' instead.
 
+  // NOTE: The previous implementation remains here in the file; keep the surrounding braces intact.
+
     const procs = cloneProcesses(processes).map((p) => {
       return {
         id: p.id,
@@ -352,35 +354,49 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // After increment, we scan queues for promotions.
-      // Promotion rule: if age >= threshold, promote one level up (level-1), FIFO by removing and pushing to tail.
+      // FIX: snapshot eligible processes per level before applying promotions.
+      // This prevents chain effects where a process promoted from one level
+      // could be considered again for further promotion within the same tick.
+      const toPromoteByLevel = Array.from({ length: queueCount }, () => []);
       for (let level = 1; level < queueCount; level++) {
-        const q = queues[level];
-        // Remove all that qualify, but keep order of remaining.
-        const keep = [];
-        const toPromote = [];
-        q.forEach((pid) => {
+        const qSnapshot = queues[level].slice();
+        qSnapshot.forEach((pid) => {
           const p = processesById.get(pid);
-          if (p.age >= agingThreshold && level > 0) toPromote.push(pid);
-          else keep.push(pid);
+          if (p.age >= agingThreshold) {
+            toPromoteByLevel[level].push(pid);
+          }
         });
-        if (toPromote.length) {
-          promotedSomething = true;
-          queues[level] = keep;
-          // promoted by one level
-          toPromote.forEach((pid) => {
-            const p = processesById.get(pid);
-            p.queueLevel = level - 1;
-            p.age = 0;
-            queues[level - 1].push(pid);
-            trace.push({
-              type: 'promote',
-              t,
-              pid,
-              fromQueue: level,
-              toQueue: level - 1,
-            });
+      }
+
+      // Apply promotions after all eligibility snapshots are computed.
+      for (let level = 1; level < queueCount; level++) {
+        const promoteList = toPromoteByLevel[level];
+        if (!promoteList.length) continue;
+
+        promotedSomething = true;
+
+        // Remove promoted processes from the original level queue (preserve remaining order).
+        const promoteSet = new Set(promoteList);
+        const keep = [];
+        queues[level].forEach((pid) => {
+          if (!promoteSet.has(pid)) keep.push(pid);
+        });
+        queues[level] = keep;
+
+        // Promote each process exactly one level.
+        promoteList.forEach((pid) => {
+          const p = processesById.get(pid);
+          p.queueLevel = level - 1;
+          p.age = 0;
+          queues[level - 1].push(pid);
+          trace.push({
+            type: 'promote',
+            t,
+            pid,
+            fromQueue: level,
+            toQueue: level - 1,
           });
-        }
+        });
       }
 
       // 3) If CPU idle, pick highest non-empty queue
