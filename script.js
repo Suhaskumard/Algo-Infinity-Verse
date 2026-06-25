@@ -1,4 +1,6 @@
 // ============================================
+
+
 // GLOBAL MODULES LOADER
 // ============================================
 (function() {
@@ -11,8 +13,10 @@
     }
     return '';
   }
+
   const base = getBaseUrl();
   const modules = ['/modules/toast.js', '/modules/error-boundary.js'];
+
   modules.forEach(mod => {
     const script = document.createElement('script');
     script.src = base + mod;
@@ -21,6 +25,15 @@
   });
 })();
 
+// UTILITY FUNCTIONS (Memoization & Debounce)
+// ============================================
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
 // ============================================
 // PARTIAL LOADER
 // ============================================
@@ -975,14 +988,14 @@ function initPracticeSection() {
   const searchInput = document.getElementById("searchInput");
   const clearBtn = document.getElementById("clearSearchBtn");
   if (searchInput) {
-    searchInput.addEventListener("input", (e) => {
+    searchInput.addEventListener("input", debounce((e) => {
       currentSearch = e.target.value.toLowerCase();
       if (window.navManager) window.navManager.updateState({ search: currentSearch, tab: 'practice' });
       currentPage = 1;
       renderProblems();
       if (currentSearch.length > 0) clearBtn.classList.add("visible");
       else clearBtn.classList.remove("visible");
-    });
+    }, 300));
   }
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
@@ -1012,8 +1025,16 @@ let currentFilter = window.navManager ? window.navManager.state.filter : 'all';
 let currentSearch = window.navManager ? window.navManager.state.search : '';
 let paginationInitialized = false;
 
+let lastFilteredCacheKey = "";
+let lastFilteredProblems = [];
+
 // Get filtered problems
 function getFilteredProblems() {
+  const cacheKey = `${currentSearch}|${currentFilter}|${userProgress?.favoriteProblems?.join(",")}`;
+  if (cacheKey === lastFilteredCacheKey) {
+    return lastFilteredProblems;
+  }
+
   let filtered = practiceProblems;
   if (currentSearch) {
     const searchLower = currentSearch.toLowerCase();
@@ -1023,6 +1044,10 @@ function getFilteredProblems() {
     if (currentFilter === 'favorites') filtered = filtered.filter(p => userProgress.favoriteProblems.includes(p.id));
     else filtered = filtered.filter(p => p.difficulty === currentFilter);
   }
+  
+  lastFilteredCacheKey = cacheKey;
+  lastFilteredProblems = filtered;
+  
   return filtered;
 }
 
@@ -1097,7 +1122,16 @@ function attachProblemGridEventDelegation(grid) {
       e.preventDefault();
       const problemId = parseInt(favoriteBtn.dataset.id);
       toggleFavorite(problemId);
-      renderProblems();
+      
+      if (currentFilter === 'favorites') {
+        renderProblems(); // Re-render to remove from list
+      } else {
+        // Optimize re-render: just update the local DOM button state
+        const isActive = favoriteBtn.classList.toggle('active');
+        favoriteBtn.setAttribute('aria-pressed', String(isActive));
+        // Clear filter cache to ensure it's re-computed next time if needed
+        lastFilteredCacheKey = "";
+      }
       return;
     }
 
