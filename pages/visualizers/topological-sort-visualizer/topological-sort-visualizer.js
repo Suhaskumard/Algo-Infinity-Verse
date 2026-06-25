@@ -18,31 +18,78 @@ let audioCtx = null;
 let isSoundEnabled = true;
 
 // DOM Elements
-const svg = document.getElementById("visualizerSvg");
-const edgeGroup = document.getElementById("svgEdges");
-const nodeGroup = document.getElementById("svgNodes");
-const placeholder = document.getElementById("canvasPlaceholder");
+// =========================
+// Required Elements Loader
+// =========================
+function loadRequiredElements() {
+  const idMap = {
+    svg: "visualizerSvg",
+    edgeGroup: "svgEdges",
+    nodeGroup: "svgNodes",
+    placeholder: "canvasPlaceholder",
+    presetSelect: "presetSelect",
+    algoSelect: "algoSelect",
+    speedRange: "speedRange",
+    speedDisplay: "speedDisplay",
+    soundToggle: "soundToggle",
+    startBtn: "startBtn",
+    pauseBtn: "pauseBtn",
+    stepBackBtn: "stepBackBtn",
+    stepForwardBtn: "stepForwardBtn",
+    resetBtn: "resetBtn",
+    canvasModeBadge: "canvasModeBadge",
+    validationBadge: "validationBadge",
+    validationAlert: "validationAlert",
+    alertTitle: "alertTitle",
+    alertDescription: "alertDescription",
+    activeStructureWrapper: "activeStructureWrapper",
+    structureTitle: "structureTitle",
+    auxiliaryTitle: "auxiliaryTitle",
+    auxiliaryStructureWrapper: "auxiliaryStructureWrapper",
+    topologicalTape: "topologicalTape",
+    logPanel: "logPanel",
+    clearLogsBtn: "clearLogsBtn"
+  };
+  const elements = {};
+  for (const [key, id] of Object.entries(idMap)) {
+    const el = document.getElementById(id);
+    if (!el) console.warn(`Required element "${id}" not found`);
+    elements[key] = el;
+  }
+  // mode buttons use querySelectorAll
+  elements.modeBtns = document.querySelectorAll('.mode-btn');
+  return elements;
+}
 
-const modeBtns = document.querySelectorAll(".mode-btn");
-const presetSelect = document.getElementById("presetSelect");
-const algoSelect = document.getElementById("algoSelect");
-const speedRange = document.getElementById("speedRange");
-const speedDisplay = document.getElementById("speedDisplay");
-const soundToggle = document.getElementById("soundToggle");
-
-const startBtn = document.getElementById("startBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const stepBackBtn = document.getElementById("stepBackBtn");
-const stepForwardBtn = document.getElementById("stepForwardBtn");
-const resetBtn = document.getElementById("resetBtn");
-
-const canvasModeBadge = document.getElementById("canvasModeBadge");
-const validationBadge = document.getElementById("validationBadge");
-const validationAlert = document.getElementById("validationAlert");
-const alertTitle = document.getElementById("alertTitle");
-const alertDescription = document.getElementById("alertDescription");
-
-const activeStructureWrapper = document.getElementById("activeStructureWrapper");
+const {
+  svg,
+  edgeGroup,
+  nodeGroup,
+  placeholder,
+  modeBtns,
+  presetSelect,
+  algoSelect,
+  speedRange,
+  speedDisplay,
+  soundToggle,
+  startBtn,
+  pauseBtn,
+  stepBackBtn,
+  stepForwardBtn,
+  resetBtn,
+  canvasModeBadge,
+  validationBadge,
+  validationAlert,
+  alertTitle,
+  alertDescription,
+  activeStructureWrapper,
+  structureTitle,
+  auxiliaryTitle,
+  auxiliaryStructureWrapper,
+  topologicalTape,
+  logPanel,
+  clearLogsBtn
+} = loadRequiredElements();
 const structureTitle = document.getElementById("structureTitle");
 const auxiliaryTitle = document.getElementById("auxiliaryTitle");
 const auxiliaryStructureWrapper = document.getElementById("auxiliaryStructureWrapper");
