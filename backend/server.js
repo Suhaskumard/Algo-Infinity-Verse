@@ -742,6 +742,27 @@ function validateRequest(req) {
 }
 
 async function handleApi(req, res, pathname) {
+  if (pathname === "/api/log-error" && req.method === "POST") {
+    try {
+      const payload = await readJsonBody(req);
+      const logFile = path.join(DATA_DIR, "client_errors.json");
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      let currentLogs = [];
+      try {
+        const raw = await fs.readFile(logFile, "utf8");
+        currentLogs = JSON.parse(raw || "[]");
+      } catch (e) {
+        // file might not exist
+      }
+      currentLogs.push(payload);
+      await fs.writeFile(logFile, `${JSON.stringify(currentLogs, null, 2)}\n`);
+      return sendJson(res, 200, { success: true });
+    } catch (err) {
+      console.error("Error logging client error:", err);
+      return sendJson(res, 500, { error: "Failed to log error" });
+    }
+  }
+
   if (pathname === "/api/team-profile" && req.method === "GET") {
     try {
       const urlParams = new URL(req.url, `http://${req.headers.host}`).searchParams;

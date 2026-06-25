@@ -1,4 +1,27 @@
 // ============================================
+// GLOBAL MODULES LOADER
+// ============================================
+(function() {
+  function getBaseUrl() {
+    const scripts = document.getElementsByTagName('script');
+    for (let s of scripts) {
+      if (s.src && s.src.includes('script.js')) {
+        return s.src.substring(0, s.src.lastIndexOf('/'));
+      }
+    }
+    return '';
+  }
+  const base = getBaseUrl();
+  const modules = ['/modules/toast.js', '/modules/error-boundary.js'];
+  modules.forEach(mod => {
+    const script = document.createElement('script');
+    script.src = base + mod;
+    script.async = false; // Preserve execution order
+    document.head.insertBefore(script, document.head.firstChild);
+  });
+})();
+
+// ============================================
 // PARTIAL LOADER
 // ============================================
 function getPartialsBase() {
