@@ -302,7 +302,7 @@ const dsaTopics = [
 // ============================================
 const practiceProblems = [
   { id: 1, title: "Two Sum", difficulty: "easy", tags: ["Arrays", "Hash Table"], acceptance: "48.2%", category: "arrays", description: "Given an array of integers nums and an integer target, return indices of the two numbers that add up to target.", constraints: ["2 ≤ nums.length ≤ 10⁴", "-10⁹ ≤ nums[i] ≤ 10⁹", "Only one valid answer exists"], followUp: "Can you solve it in O(n) time complexity?", functionName: "twoSum", params: ["nums", "target"], testCases: [{ input: [[2,7,11,15], 9], expected: [0,1] }, { input: [[3,2,4], 6], expected: [1,2] }, { input: [[3,3], 6], expected: [0,1] }] },
-  { id: 2, title: "Valid Parentheses", difficulty: "easy", tags: ["Strings", "Stack"], acceptance: "40.2%", category: "strings", description: "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.", constraints: ["1 ≤ s.length ≤ 10⁴", "s consists of parentheses only '()[]{}'"], followUp: "Can you solve it in O(n) time and O(n) space?", functionName: "isValid", params: ["brackets"], guide: "brackets: string of '()', '{}', '[]' characters\nreturns: true if every opening bracket has a matching closing bracket in the correct order, false otherwise", testCases: [{ input: ["()"], expected: true }, { input: ["()[]{}"], expected: true }, { input: ["(]"], expected: false }, { input: ["([)]"], expected: false }, { input: ["{[]}"], expected: true }] },
+  { id: 2, title: "Valid Parentheses", difficulty: "easy", tags: ["Strings", "Stack"], acceptance: "40.2%", category: "strings", description: "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.", constraints: ["1 ≤ s.length ≤ 10⁴", "s consists of parentheses only '()[]{}'"], followUp: "Can you solve it in O(n) time and O(n) space?", functionName: "isValid", testCases: [{ input: ["()"], expected: true }, { input: ["()[]{}"], expected: true }, { input: ["(]"], expected: false }, { input: ["([)]"], expected: false }, { input: ["{[]}"], expected: true }] },
   { id: 3, title: "Merge Two Sorted Lists", difficulty: "easy", tags: ["Linked List", "Recursion"], acceptance: "58.5%", category: "linkedlist", description: "Given two sorted arrays list1 and list2, merge them into one sorted array.", constraints: ["0 ≤ list1.length, list2.length ≤ 50", "-100 ≤ list1[i], list2[i] ≤ 100"], followUp: "Can you solve it iteratively using O(1) extra space, and also recursively?", functionName: "mergeLists", testCases: [{ input: [[1,2,4], [1,3,4]], expected: [1,1,2,3,4,4] }, { input: [[], []], expected: [] }, { input: [[], [0]], expected: [0] }] },
   { id: 4, title: "Maximum Subarray", difficulty: "medium", tags: ["Arrays", "Divide & Conquer"], acceptance: "46.2%", category: "arrays", description: "Given an integer array nums, find the contiguous subarray (containing at least one number) which has the largest sum.", constraints: ["1 ≤ nums.length ≤ 10⁵", "-10⁴ ≤ nums[i] ≤ 10⁴"], followUp: "Can you solve it in O(n) time using Kadane's Algorithm?", functionName: "maxSubArray", testCases: [{ input: [[-2,1,-3,4,-1,2,1,-5,4]], expected: 6 }, { input: [[1]], expected: 1 }, { input: [[5,4,-1,7,8]], expected: 23 }, { input: [[-1]], expected: -1 }] },
   { id: 5, title: "LRU Cache", difficulty: "medium", tags: ["Design", "Hash Table"], acceptance: "37.5%", category: "arrays", description: "Design a data structure that follows the constraints of a Least Recently Used (LRU) cache.", constraints: ["1 ≤ capacity ≤ 3000", "0 ≤ key, value ≤ 10⁴", "At most 2 × 10⁵ calls"], followUp: "Can you implement both get and put in O(1) time complexity?" },
@@ -980,7 +980,6 @@ function renderQuizQuestion() {
 }
 
 function selectQuizAnswer(selectedIndex) {
-  clearInterval(quizTimerInterval);
   const question = currentQuiz.questions[currentQuiz.currentQuestionIndex];
   const isCorrect = selectedIndex === question.correct;
   currentQuiz.answers.push({ questionId: question.id, selected: selectedIndex, correct: question.correct, isCorrect: isCorrect });
@@ -1146,9 +1145,7 @@ let currentFilter = 'all';
 let currentSearch = '';
 let paginationInitialized = false;
 
-let lastFilteredCacheKey = "";
-let lastFilteredProblems = [];
-
+// Get filtered problems
 function getFilteredProblems() {
   let filtered = practiceProblems;
   if (currentSearch) {
@@ -1162,33 +1159,39 @@ function getFilteredProblems() {
   return filtered;
 }
 
+// Render problems with pagination
 function renderProblems() {
   const filtered = getFilteredProblems();
   const totalProblems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalProblems / PROBLEMS_PER_PAGE));
-
   if (currentPage > totalPages) currentPage = totalPages;
-
+  if (currentPage < 1) currentPage = 1;
   const start = (currentPage - 1) * PROBLEMS_PER_PAGE;
   const end = Math.min(start + PROBLEMS_PER_PAGE, totalProblems);
-  const pageProblems = filtered.slice(start, end);
-
+  const paginatedProblems = filtered.slice(start, end);
+  
   const visibleCountEl = document.getElementById('visible-count');
   const totalCountEl = document.getElementById('total-count');
-  if (visibleCountEl) visibleCountEl.textContent = pageProblems.length;
+  if (visibleCountEl) visibleCountEl.textContent = paginatedProblems.length;
   if (totalCountEl) totalCountEl.textContent = totalProblems;
-
-  renderProblemCards(pageProblems);
+  
+  renderProblemCards(paginatedProblems);
   updatePaginationControls(currentPage, totalPages);
 }
 
+// Render problem cards
 function renderProblemCards(problems) {
   const problemsGrid = document.querySelector(".problems-grid");
   if (!problemsGrid) return;
-
+  
+  if (!problems || problems.length === 0) {
+    problemsGrid.innerHTML = `<div class="empty-state" style="text-align:center; padding:3rem; color:var(--text-secondary);"><p>No problems found matching your criteria.</p></div>`;
+    return;
+  }
+  
   const cpType = userProgress.codingPersonality ? userProgress.codingPersonality.type : "brute-force first";
-
-  const html = problems.map(problem => {
+  
+  problemsGrid.innerHTML = problems.map((problem) => {
     let isRec = false, recLabel = "";
     if (cpType === "brute-force first") {
       if (problem.difficulty === "easy" || problem.tags.includes("Arrays")) { isRec = true; recLabel = "Plan First!"; }
@@ -1203,12 +1206,11 @@ function renderProblemCards(problems) {
     const isCompleted = userProgress.completedProblems.includes(problem.id);
     const isFavorite = userProgress.favoriteProblems.includes(problem.id);
     const hasNotes = userProgress.problemNotes && userProgress.problemNotes[problem.id];
-
+    
     return `<div class="problem-card animate-in" data-id="${problem.id}"><div class="problem-header"><h3 class="problem-title">${recBadge}${problem.title}</h3><div class="problem-actions"><button class="favorite-btn ${isFavorite ? 'active' : ''}" data-id="${problem.id}" aria-label="Favorite problem"><i class="fas fa-heart"></i></button><button class="notes-btn ${hasNotes ? 'has-notes' : ''}" data-id="${problem.id}" aria-label="Problem notes"><i class="fas fa-sticky-note"></i></button><span class="difficulty-badge ${problem.difficulty}">${problem.difficulty}</span></div></div><div class="problem-tags">${problem.tags.map(tag => `<span class="tag">${tag}</span>`).join("")}</div><div class="problem-meta"><span class="acceptance-rate"><i class="fas fa-users"></i> ${problem.acceptance} acceptance</span>${isCompleted ? '<span class="completed-badge"><i class="fas fa-check"></i> Completed</span>' : ''}</div></div>`;
   }).join("");
-
-  problemsGrid.innerHTML = html;
-
+  
+  // Use event delegation for problem cards (listeners are attached once).
   if (!problemsGrid.dataset.listenersAttached) {
     attachProblemGridEventDelegation(problemsGrid);
     problemsGrid.dataset.listenersAttached = "true";
@@ -1460,21 +1462,15 @@ function initRoadmap() {
         } else if (level === "intermediate") {
           document.getElementById("roadmapOverviewTab")?.click();
         } else if (level === "advanced") {
-          document.getElementById("roadmapOverviewTab")?.click();
+          document
+            .querySelector(".roadmap-container")
+            ?.scrollIntoView({ behavior: "smooth" });
         }
       });
     });
 
     roadmapStagesInitialized = true;
   }
-  document.querySelectorAll(".roadmap-btn").forEach((button) => {
-    button.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      button.closest(".stage").click();
-    });
-  });
   if (progressBar && stages.length >= 3) {
     const progress = Math.min((userProgress.completedProblems.length / practiceProblems.length) * 100, 100);
     setTimeout(() => {
@@ -2225,18 +2221,9 @@ function openQuizEditor(problem) {
   const editor = document.getElementById("codeEditor");
   const langSelect = document.getElementById("languageSelect");
   const lang = langSelect ? langSelect.value : "javascript";
-  const defaultCode = getDefaultCode(lang, problem);
   const savedDraft = getEditorDraft(problem.id);
   if (editor) {
-    let code = defaultCode;
-    if (savedDraft !== null) {
-      const draftSig = getEditorDraftSignature(problem.id);
-      const currentSig = getProblemSignature(problem);
-      const isStale = draftSig === null || draftSig !== currentSig;
-      code = isStale ? defaultCode : savedDraft;
-      if (isStale) clearEditorDraft(problem.id);
-    }
-    editor.value = code;
+    editor.value = savedDraft !== null ? savedDraft : getDefaultCode(lang, problem);
     editor.scrollTop = 0;
     editor.scrollLeft = 0;
     editor.dispatchEvent(new Event('input'));
@@ -2283,20 +2270,13 @@ function getDefaultCode(lang, problem) {
       }).join(', ')
     : 'params';
 
-  let docComment = '';
-  if (problem.guide) {
-    const lines = problem.guide.split('\n');
-    const prefix = lang === 'python' ? '# ' : '// ';
-    docComment = lines.map(l => prefix + l).join('\n') + '\n';
-  }
-
   const templates = {
-    javascript: docComment + "function " + fnName + "(" + (params.join(', ') || 'params') + ") {\n    \n}",
-    python: docComment + "def " + fnName + "(" + (params.join(', ') || 'params') + "):\n    pass\n",
-    java: "class Solution {\n" + docComment.replace(/^/gm, '    ') + "    public " + retType + " " + fnName + "(" + paramStr + ") {\n        \n    }\n}",
-    cpp: '#include <string>\n#include <stack>\nusing namespace std;\n\n' + docComment + retType + " " + fnName + "(" + paramStr + ") {\n    \n}",
-    c: '#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\n\n' + docComment + retType + " " + fnName + "(" + paramStr + ") {\n    \n}",
-    swift: docComment + "func " + fnName + "(" + paramStr + ") -> " + retType + " {\n    \n}"
+    javascript: "function " + fnName + "(" + (params.join(', ') || 'params') + ") {\n    \n}",
+    python: "def " + fnName + "(" + (params.join(', ') || 'params') + "):\n    pass\n",
+    java: "class Solution {\n    public " + retType + " " + fnName + "(" + paramStr + ") {\n        \n    }\n}",
+    cpp: retType + " " + fnName + "(" + paramStr + ") {\n    \n}",
+    c: retType + " " + fnName + "(" + paramStr + ") {\n    \n}",
+    swift: "func " + fnName + "(" + paramStr + ") -> " + retType + " {\n    \n}"
   };
   return templates[lang] || templates.javascript;
 }
@@ -2363,8 +2343,7 @@ function buildHarnessCode(code, lang, functionName, testCases) {
     return code + `\n\nconst __TC__ = ${tcJson};\nconst __RES__ = [];\nfor (let i = 0; i < __TC__.length; i++) {\n  const tc = __TC__[i];\n  try {\n    const result = ${functionName}(...tc.input);\n    const passed = JSON.stringify(result) === JSON.stringify(tc.expected);\n    __RES__.push({ index: i, ran: true, passed, actual: result, expected: tc.expected, input: tc.input, error: null });\n  } catch (e) {\n    __RES__.push({ index: i, ran: true, passed: false, actual: null, expected: tc.expected, input: tc.input, error: e.message });\n  }\n}\nconsole.log("__RESULT__:" + JSON.stringify(__RES__));`;
   }
   if (lang === "python") {
-    const esc = tcJson.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    return `${code}\n\nimport json\n__TC__ = json.loads('${esc}')\n__RES__ = []\nfor i, tc in enumerate(__TC__):\n    try:\n        result = ${functionName}(*tc["input"])\n        passed = json.dumps(result, default=str) == json.dumps(tc["expected"], default=str)\n        __RES__.append({"index": i, "ran": True, "passed": passed, "actual": result, "expected": tc["expected"], "input": tc["input"], "error": None})\n    except Exception as e:\n        __RES__.append({"index": i, "ran": True, "passed": False, "actual": None, "expected": tc["expected"], "input": tc["input"], "error": str(e)})\nprint("__RESULT__:" + json.dumps(__RES__, default=str))`;
+    return `${code}\n\nimport json\n__TC__ = ${tcJson}\n__RES__ = []\nfor i, tc in enumerate(__TC__):\n    try:\n        result = ${functionName}(*tc["input"])\n        passed = json.dumps(result, default=str) == json.dumps(tc["expected"], default=str)\n        __RES__.append({"index": i, "ran": True, "passed": passed, "actual": result, "expected": tc["expected"], "input": tc["input"], "error": None})\n    except Exception as e:\n        __RES__.append({"index": i, "ran": True, "passed": False, "actual": None, "expected": tc["expected"], "input": tc["input"], "error": str(e)})\nprint("__RESULT__:" + json.dumps(__RES__, default=str))`;
   }
   if (lang === "cpp") {
     return genCppHarness(code, functionName, testCases);
@@ -2409,7 +2388,6 @@ function genCppHarness(code, fn, tcs) {
   const inTypes = tcs[0].input.map(v => j2t(v));
   let s = '#include <iostream>\n#include <string>\n#include <vector>\n#include <sstream>\nusing namespace std;\n\n';
   s += code + '\n\n';
-  s += 'string __j(bool v) { return v ? "true" : "false"; }\n';
   s += 'string __j(int v) { return to_string(v); }\n';
   s += 'string __j(const string& v) { return "\\"" + v + "\\""; }\n';
   s += 'template<typename T>\nstring __j(const vector<T>& v) {\n  if (v.empty()) return "[]";\n  stringstream ss;\n  ss << "[" << __j(v[0]);\n  for (size_t i=1;i<v.size();i++) ss << "," << __j(v[i]);\n  ss << "]";\n  return ss.str();\n}\n';
@@ -2451,15 +2429,10 @@ function genCppHarness(code, fn, tcs) {
 function genJavaHarness(code, fn, tcs) {
   const outType = j2t(tcs[0].expected);
   const inTypes = tcs[0].input.map(v => j2t(v));
-  const javaType = outType === 'int[]' ? 'int[]' : outType === 'string' ? 'String' : outType === 'bool' ? 'boolean' : 'int';
   let s = code + '\n\nclass Main {\n';
   if (outType === 'int[]') {
     s += '  static String __j(int[] v) {\n    if (v == null) return "null";\n    StringBuilder sb = new StringBuilder("[");\n    for (int i = 0; i < v.length; i++) { if (i > 0) sb.append(","); sb.append(v[i]); }\n    sb.append("]");\n    return sb.toString();\n  }\n';
     s += '  static boolean __eq(int[] a, int[] b) {\n    if (a == null && b == null) return true;\n    if (a == null || b == null || a.length != b.length) return false;\n    for (int i = 0; i < a.length; i++) if (a[i] != b[i]) return false;\n    return true;\n  }\n';
-  } else {
-    s += '  static String __j(boolean v) { return String.valueOf(v); }\n';
-    s += '  static String __j(int v) { return String.valueOf(v); }\n';
-    s += '  static String __j(String v) { return v == null ? "null" : "\\"" + v + "\\""; }\n';
   }
   s += '  public static void main(String[] args) {\n    StringBuilder __res = new StringBuilder("[");\n';
   for (let i = 0; i < tcs.length; i++) {
@@ -2471,7 +2444,7 @@ function genJavaHarness(code, fn, tcs) {
       if (inTypes[j] === 'int[]') callArgs += 'new int[]{' + tcs[i].input[j].map(x => x).join(',') + '}';
       else callArgs += valToLit(tcs[i].input[j], inTypes[j]);
     }
-    s += '      ' + javaType + ' __r = new Solution().' + fn + '(' + callArgs + ');\n';
+    s += '      int[] __r = new Solution().' + fn + '(' + callArgs + ');\n';
     if (outType === 'int[]') {
       s += '      boolean __p = __eq(__r, new int[]{' + tcs[i].expected.map(x => x).join(',') + '});\n';
     } else {
@@ -2489,7 +2462,7 @@ function genJavaHarness(code, fn, tcs) {
 function genCHarness(code, fn, tcs) {
   const outType = j2t(tcs[0].expected);
   const inTypes = tcs[0].input.map(v => j2t(v));
-  let s = '#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\n\n';
+  let s = '#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n\n';
   s += code + '\n\n';
   if (outType === 'int[]') {
     s += 'void __j(int* v, int n, char* buf) {\n  if (v == NULL) { strcpy(buf, "null"); return; }\n  buf[0] = \'[\'; int pos = 1;\n  for (int i = 0; i < n; i++) { if (i > 0) buf[pos++] = \',\'; pos += sprintf(buf + pos, "%d", v[i]); }\n  buf[pos++] = \']\'; buf[pos] = 0;\n}\n';
@@ -2508,26 +2481,14 @@ function genCHarness(code, fn, tcs) {
         callArgs += '(int[]){' + arr.map(x => x).join(',') + '}';
       } else callArgs += valToLit(tcs[i].input[j], inTypes[j]);
     }
-    if (outType === 'int[]') {
-      const expLen = Array.isArray(tcs[i].expected) ? tcs[i].expected.length : 1;
-      s += '  int* __r = ' + fn + '(' + callArgs + ');\n';
-      s += '  int __p = __eq(__r, (int[]){' + tcs[i].expected.map(x => x).join(',') + '}, ' + expLen + ');\n';
-      s += '  printf(__p ? "true" : "false");\n  printf(",\\"actual\\":");\n  char __buf[256]; __j(__r, ' + expLen + ', __buf); printf("%s", __buf);\n';
-    } else {
-      const cType = outType === 'string' ? 'char*' : 'int';
-      s += '  ' + cType + ' __r = ' + fn + '(' + callArgs + ');\n';
-      if (outType === 'string') {
-        const expStr = valToLit(tcs[i].expected, outType);
-        s += '  int __p = __r && ' + expStr + ' && strcmp(__r, ' + expStr + ') == 0;\n';
-      } else {
-        s += '  int __p = __r == ' + valToLit(tcs[i].expected, outType) + ';\n';
-      }
-      s += '  printf(__p ? "true" : "false");\n  printf(",\\"actual\\":");\n';
-      if (outType === 'string') s += '  printf(__r ? "\\"%s\\"" : "null", __r);\n';
-      else if (outType === 'bool') s += '  printf(__r ? "true" : "false");\n';
-      else s += '  printf("%d", __r);\n';
-    }
-    s += '  printf("}");\n  }\n';
+    const expLen = Array.isArray(tcs[i].expected) ? tcs[i].expected.length : 1;
+    s += '  int* __r = ' + fn + '(' + callArgs + ');\n';
+    s += '  int __p = __eq(__r, (int[]){' + tcs[i].expected.map(x => x).join(',') + '}, ' + expLen + ');\n';
+    s += '  printf(__p ? "true" : "false");\n';
+    s += '  printf(",\\"actual\\":");\n';
+    s += '  char __buf[256]; __j(__r, ' + expLen + ', __buf); printf("%s", __buf);\n';
+    s += '  printf("}");\n';
+    s += '  }\n';
   }
   s += '  printf("]\\n");\n  return 0;\n}\n';
   return s;
@@ -2606,18 +2567,30 @@ async function executeViaApi(lang, code) {
 
 function parseTestResults(stdout, testCount) {
   const marker = "__RESULT__:";
-  const pos = stdout.lastIndexOf(marker);
-  if (pos !== -1) {
-    const raw = stdout.substring(0, pos).trim();
-    const json = stdout.substring(pos + marker.length).trim();
+  const markerIdx = stdout.indexOf(marker);
+  if (markerIdx !== -1) {
+    const jsonStart = markerIdx + marker.length;
+    let depth = 0;
+    let jsonEnd = -1;
+    for (let i = jsonStart; i < stdout.length; i++) {
+      if (stdout[i] === "[") depth++;
+      else if (stdout[i] === "]") {
+        depth--;
+        if (depth === 0) { jsonEnd = i + 1; break; }
+      }
+    }
+    if (jsonEnd === -1) jsonEnd = stdout.length;
+    const jsonStr = stdout.substring(jsonStart, jsonEnd);
     try {
-      const parsed = JSON.parse(json);
-      const testResults = Array.isArray(parsed) ? parsed : [];
+      const testResults = JSON.parse(jsonStr);
       const allPassed = testResults.length > 0 && testResults.every(r => r.passed);
-      return { allPassed, testResults, rawOutput: raw };
-    } catch (e) { /* fall through */ }
+      const cleanOutput = (stdout.substring(0, markerIdx) + stdout.substring(jsonEnd)).trim();
+      return { allPassed, testResults, rawOutput: cleanOutput };
+    } catch (e) {
+      return { allPassed: false, testResults: Array(testCount).fill({ ran: false, passed: false, error: "Failed to parse test results" }), rawOutput: stdout };
+    }
   }
-  return { allPassed: false, testResults: Array(testCount).fill({ ran: false, passed: false, error: "No test result marker found" }), rawOutput: stdout };
+  return { allPassed: false, testResults: Array(testCount).fill({ ran: false, passed: false, error: "No test result marker found in output" }), rawOutput: stdout };
 }
 
 async function executeCode(code, lang, problem) {
@@ -2659,10 +2632,7 @@ function setOutput(text, type) {
   else el.innerHTML = '<pre>' + text + '</pre>';
 }
 
-let _running = false;
-
 async function runQuizCode() {
-  if (_running) return;
   const editor = document.getElementById("codeEditor");
   if (!editor) return;
   const code = editor.value;
@@ -2678,18 +2648,13 @@ async function runQuizCode() {
   }
   renderTestCases(testCases);
   setOutput("", "running");
-  _running = true;
   try {
     const result = await executeCode(code, lang, problem);
-    if (!result.testResults || !Array.isArray(result.testResults)) {
-      setOutput("Execution returned no test results.", "error");
-      return;
-    }
     renderTestCases(testCases, result.testResults);
     if (result.allPassed) {
       setOutput("All tests passed!", "success");
     } else {
-      const failures = result.testResults.filter(r => r && !r.passed);
+      const failures = result.testResults.filter(r => !r.passed);
       const failMsg = failures.length + " / " + result.testResults.length + " tests failed";
       const out = result.rawOutput ? failMsg + "\n\nConsole output:\n" + result.rawOutput : failMsg;
       setOutput(out, "error");
@@ -2697,13 +2662,10 @@ async function runQuizCode() {
   } catch (e) {
     renderTestCases(testCases);
     setOutput(e.message || "Execution failed", "error");
-  } finally {
-    _running = false;
   }
 }
 
 async function submitQuizCode() {
-  if (_running) return;
   const editor = document.getElementById("codeEditor");
   if (!editor) return;
   const code = editor.value;
@@ -2719,15 +2681,8 @@ async function submitQuizCode() {
     return;
   }
   showNotification("⏳ Running tests...", "info");
-  renderTestCases(testCases);
-  setOutput("", "running");
-  _running = true;
   try {
     const result = await executeCode(code, lang, problem);
-    if (!result.testResults || !Array.isArray(result.testResults)) {
-      showNotification("Execution returned no test results.", "error");
-      return;
-    }
     renderTestCases(testCases, result.testResults);
     if (result.allPassed) {
       if (!userProgress.submittedSolutions) userProgress.submittedSolutions = {};
@@ -2748,7 +2703,7 @@ async function submitQuizCode() {
       clearEditorDraft(submittedId);
       showNotification("Problem solved! +" + getXPForDifficulty(difficulty) + " XP", "success");
     } else {
-      const failures = result.testResults.filter(r => r && !r.passed);
+      const failures = result.testResults.filter(r => !r.passed);
       setOutput(failures.length + " / " + result.testResults.length + " tests failed. Fix the issues and try again.", "error");
       showNotification(failures.length + " test(s) failed. Keep trying!", "error");
     }
@@ -2756,8 +2711,6 @@ async function submitQuizCode() {
     renderTestCases(testCases);
     setOutput(e.message || "Execution failed", "error");
     showNotification("Execution error: " + (e.message || "Unknown error"), "error");
-  } finally {
-    _running = false;
   }
 }
 
@@ -2765,32 +2718,11 @@ function getXPForDifficulty(difficulty) { const map = { easy: 100, medium: 250, 
 
 function closeQuizEditor() { const el = document.getElementById("quizEditorModal"); if (el) el.classList.remove("active"); currentProblem = null; }
 
-function getProblemSignature(problem) {
-  return JSON.stringify({
-    fn: problem.functionName,
-    params: problem.params,
-    guide: problem.guide,
-    tc: problem.testCases
-  });
-}
-
-function saveEditorDraft(problemId, code, signature) {
-  try {
-    localStorage.setItem(`editorDraft_${problemId}`, code);
-    if (signature) localStorage.setItem(`editorDraft_sig_${problemId}`, signature);
-  } catch (e) { console.warn('Could not save draft:', e); }
-}
+function saveEditorDraft(problemId, code) { try { localStorage.setItem(`editorDraft_${problemId}`, code); } catch (e) { console.warn('Could not save draft:', e); } }
 
 function getEditorDraft(problemId) { try { return localStorage.getItem(`editorDraft_${problemId}`); } catch (e) { return null; } }
 
-function getEditorDraftSignature(problemId) { try { return localStorage.getItem(`editorDraft_sig_${problemId}`); } catch (e) { return null; } }
-
-function clearEditorDraft(problemId) {
-  try {
-    localStorage.removeItem(`editorDraft_${problemId}`);
-    localStorage.removeItem(`editorDraft_sig_${problemId}`);
-  } catch (e) { console.warn('Could not clear draft:', e); }
-}
+function clearEditorDraft(problemId) { try { localStorage.removeItem(`editorDraft_${problemId}`); } catch (e) { console.warn('Could not clear draft:', e); } }
 
 window.addEventListener("resize", () => {
   if (typeof updateLineNumbers === 'function') updateLineNumbers();
@@ -3149,7 +3081,7 @@ function highlightCpp(line) {
   return result.replace(regex, (m, comment, str, pre, kw, num) => {
     if (comment) return '<span class="token comment">' + comment + '</span>';
     if (str) return '<span class="token string">' + str + '</span>';
-    if (pre) return '<span class="token preprocessor">' + pre + '</span>';
+    if (pre) return '<span class="token comment">' + pre + '</span>';
     if (kw) return '<span class="token keyword keyword-' + (kwType[kw]||'flow') + '">' + kw + '</span>';
     if (num) return '<span class="token number">' + num + '</span>';
     return m;
@@ -3172,7 +3104,7 @@ function highlightC(line) {
   return result.replace(regex, (m, comment, str, pre, kw, num) => {
     if (comment) return '<span class="token comment">' + comment + '</span>';
     if (str) return '<span class="token string">' + str + '</span>';
-    if (pre) return '<span class="token preprocessor">' + pre + '</span>';
+    if (pre) return '<span class="token comment">' + pre + '</span>';
     if (kw) return '<span class="token keyword keyword-' + (kwType[kw]||'flow') + '">' + kw + '</span>';
     if (num) return '<span class="token number">' + num + '</span>';
     return m;
@@ -3224,7 +3156,7 @@ function initializeQuizEditor() {
   if (!editor || editor.dataset.initialized === 'true') return;
   editor.dataset.initialized = 'true';
   const syncEditorState = () => { updateSyntaxHighlight(); updateLineNumbers(); syncScroll(); };
-  editor.addEventListener('input', () => { syncEditorState(); if (currentProblem) saveEditorDraft(currentProblem.id, editor.value, getProblemSignature(currentProblem)); });
+  editor.addEventListener('input', () => { syncEditorState(); if (currentProblem) saveEditorDraft(currentProblem.id, editor.value); });
   editor.addEventListener('scroll', syncScroll);
   editor.addEventListener('keyup', updateCurrentLineHighlight);
   editor.addEventListener('click', updateCurrentLineHighlight);
