@@ -13,6 +13,7 @@ import { analyzeWorkflow } from "./backend/repository-analyzer/cicdValidator.js"
 import { VCSFactory } from "./backend/vcs/VCSFactory.js";
 import { enqueueBulkAudit, getBatchProgress } from "./backend/jobs/queue.js";
 import "./backend/jobs/worker.js"; // Initialize worker
+import { generateSdlcAdvice } from "./sdlcAdvisor.js";
 import { parse as csvParse } from "csv-parse/sync";
 import { v4 as uuidv4 } from "uuid";
 import { handleReportRequest } from "./backend/reports/reportGenerator.js";
@@ -647,6 +648,21 @@ async function handleApi(req, res, pathname) {
     } catch (err) {
       console.error("Repository analysis error:", err.message);
       return sendJson(res, 500, { error: "Failed to analyze repository. " + err.message });
+// SDLC Advisor API
+if (pathname === "/api/sdlc-advisor" && req.method === "POST") {
+  try {
+    const payload = await readJsonBody(req);
+    const { description } = payload;
+    if (!description) {
+      return sendJson(res, 400, { error: "Project description is required." });
+    }
+    const advice = await generateSdlcAdvice(description);
+    return sendJson(res, 200, advice);
+  } catch (e) {
+    console.error("SDLC Advisor error:", e);
+    return sendJson(res, 500, { error: "Failed to generate SDLC advice." });
+  }
+}
     }
   }
 
