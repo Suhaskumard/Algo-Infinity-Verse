@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Algo Infinity Verse - Master DSA &amp; Crack Interviews</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#38bdf8" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="/pages/learning/rust-learning.css" />
     <link
@@ -47,6 +49,16 @@
     </script>
 </head>
   <body data-page="index">
+    <!-- Offline Status Banner -->
+    <div id="offline-banner" class="offline-banner hidden" aria-live="polite">
+      <i class="fas fa-wifi-slash"></i> You are currently offline. Some features may be limited, but cached content is available.
+    </div>
+
+    <!-- PWA Storage Usage -->
+    <div id="pwa-storage-usage" style="position: fixed; bottom: 10px; left: 10px; background: rgba(16, 23, 42, 0.8); border: 1px solid var(--primary); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1; z-index: 9999; backdrop-filter: blur(5px);">
+      Checking storage...
+    </div>
+
     <!-- Loading Screen -->
     <div id="loading-screen">
       <div class="loader">
@@ -864,6 +876,29 @@
         </div>
       </div>
     </section>
+
+    
+    <!-- Did You Know? Section -->
+    <div class="dashboard-card facts-card">
+      <div class="facts-header">
+        <div class="facts-title">
+            <span class="facts-icon" aria-hidden="true">💡</span>
+            <h3>Did You Know?</h3>
+        </div>
+        <button onclick="showNextFact()" class="facts-btn">
+            Next Fact →
+        </button>
+    </div>
+    <div class="facts-content">
+        <p id="factText" class="fact-text" aria-live="polite" aria-atomic="true">
+            Loading fact...
+        </p>
+        <div class="facts-footer">
+            <span class="facts-date" id="factDate">📅 Fact of the day</span>
+            <span class="facts-counter" id="factCounter">1/15</span>
+        </div>
+    </div>
+</div>
 
     <!-- Gamification Section -->
     <section id="gamification" class="section gamification-section">
@@ -1826,6 +1861,7 @@
 <script src="utils/navigationManager.js"></script>
     <script src="timer.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="utils/searchEngine.js"></script>
     <script src="script.js"></script>
     <script src="theme.js"></script>
     <script src="auth-gate.js"></script>
