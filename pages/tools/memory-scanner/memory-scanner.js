@@ -12,11 +12,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let isAuthenticated = false;
 
-  async function verifySession() {
+  // CodeRabbit-proof: Safe JSON parser to gracefully handle HTML 404/500 errors
+  async function safeJsonParse(response) {
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text(); // Read as text to prevent JSON crash
+      throw new Error(`Server Error (${response.status}): Expected JSON but received HTML/Text.`);
+    }
+    return response.json();
+  }
+
+async function verifySession() {
     try {
       const response = await fetch("/api/session", { credentials: "include" });
+      const data = await safeJsonParse(response);
+      
       if (response.ok) {
-        const data = await response.json();
+        if (data.authenticated && data.user) {
+          isAuthenticated = true;
+          sessionNotice.className = "session-notice authenticated";
+          sessionNotice.textContent = "";
+          const icon = document.createElement("i");
+          icon.className = "fas fa-circle-check";
+          const strong = document.createElement("strong");
+          strong.textContent = data.user.name;
+          sessionNotice.append(
+            icon,
+            " Tracking memory for ",
+            strong,
+            ` (${data.user.email})`
+          );
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to check user session:", err);
+      // Let the user know the session failed to load properly.
+      sessionNotice.className = "session-notice error";
+      sessionNotice.innerHTML = `<i class="fas fa-circle-exclamation"></i> Error loading session data: ${err.message}. Please refresh.`;
+      
+      dueList.innerHTML = `<p class="empty-state">Unable to load session. Please refresh the page.</p>`;
+      allList.innerHTML = `<p class="empty-state">Unable to load session. Please refresh the page.</p>`;
+      logBtn.disabled = true;
+      return; 
+    }
         if (data.authenticated && data.user) {
           isAuthenticated = true;
           sessionNotice.className = "session-notice authenticated";
@@ -80,7 +119,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isAuthenticated) return;
     try {
       const response = await fetch("/api/memory/due", { credentials: "include" });
-      const data = await response.json();
+      const data = await safeJsonParse(response);
+      
       if (!response.ok) throw new Error(data.error || "Failed to load due topics.");
 
       if (!data.due || data.due.length === 0) {
@@ -93,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .join("");
     } catch (err) {
       console.error(err);
-      dueList.innerHTML = `<p class="empty-state">Failed to load due topics.</p>`;
+      dueList.innerHTML = `<p class="empty-state" style="color: #dc3545;">${err.message}</p>`;
     }
   }
 
@@ -101,7 +141,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isAuthenticated) return;
     try {
       const response = await fetch("/api/memory/all", { credentials: "include" });
-      const data = await response.json();
+      const data = await safeJsonParse(response);
+      
       if (!response.ok) throw new Error(data.error || "Failed to load topics.");
 
       if (!data.cards || data.cards.length === 0) {
@@ -118,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .join("");
     } catch (err) {
       console.error(err);
-      allList.innerHTML = `<p class="empty-state">Failed to load topics.</p>`;
+      allList.innerHTML = `<p class="empty-state" style="color: #dc3545;">${err.message}</p>`;
     }
   }
 
@@ -155,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ topic, quality: Number(quality) }),
       });
 
-      const result = await response.json();
+      const result = await safeJsonParse(response);
       if (!response.ok) throw new Error(result.error || "Failed to log session.");
 
       showLogMessage(`Logged "${topic}". Next review: ${formatDate(result.card.nextReviewDate)}.`, "success");
