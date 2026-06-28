@@ -3751,6 +3751,59 @@ function closeShortcutModal() {
     if (modal) modal.style.display = 'none';
 }
 
+// ===== DID YOU KNOW? FACTS =====
+const facts = [
+    "The first computer virus, called 'Creeper', was created in 1971",
+    "The term 'bug' was coined when a moth got stuck in a computer in 1947",
+    "The first algorithm was written over 4,000 years ago by Babylonians",
+    "There are over 700 programming languages in use today",
+    "The first computer programmer was Ada Lovelace in the 1840s",
+    "Google processes over 3.5 billion searches per day",
+    "The first website is still online (info.cern.ch)",
+    "Python is named after Monty Python, not the snake",
+    "The first hard drive weighed over a ton and stored 5MB",
+    "JavaScript was created in just 10 days",
+    "The first computer mouse was made of wood",
+    "The first email was sent in 1971 by Ray Tomlinson",
+    "CAPTCHA stands for Completely Automated Public Turing test",
+    "The first webcam was used to monitor a coffee pot",
+    "There are more than 1.5 billion websites on the internet"
+];
+
+function getDailyFact() {
+    const today = new Date().toDateString();
+    let hash = 0;
+    for (let i = 0; i < today.length; i++) {
+        hash = ((hash << 5) - hash) + today.charCodeAt(i);
+        hash = hash & hash;
+    }
+    const index = Math.abs(hash) % facts.length;
+    return facts[index];
+}
+
+function showNextFact() {
+    const factText = document.getElementById('factText');
+    const factDate = document.getElementById('factDate');
+    
+    const randomIndex = Math.floor(Math.random() * facts.length);
+    factText.textContent = facts[randomIndex];
+    factDate.textContent = `💡 Fun fact #${randomIndex + 1}`;
+}
+
+function showDailyFact() {
+    const factText = document.getElementById('factText');
+    const factDate = document.getElementById('factDate');
+    
+    factText.textContent = getDailyFact();
+    const today = new Date().toLocaleDateString();
+    factDate.textContent = `📅 Fact of the day • ${today}`;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    showDailyFact();
+});
+
 // ==== CODE LANGUAGE BADGES ====
 function detectLanguage(code) {
   const patterns = {
@@ -3869,6 +3922,7 @@ function trackBadgeEarned(badgeName) {
 }
 
     //Run on page load
+    document.addEventListener('DOMContentLoaded' , addLanguageBadges);
     document.addEventListener('DOMContentLoaded' , addLanguageBadges);
 // ============================================
 // REUSABLE ACCESSIBLE MODAL ARCHITECTURE
@@ -4218,3 +4272,99 @@ function trackBadgeEarned(badgeName) {
     
     setTimeout(setupProfileListeners, 200);
 })();
+
+// PWA Service Worker Registration & Lifecycle Management
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        
+        if (registration.waiting) {
+          showUpdateToast(registration.waiting);
+        }
+        
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateToast(newWorker);
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.log('ServiceWorker registration failed: ', error);
+      });
+      
+    navigator.serviceWorker.addEventListener('message', async (event) => {
+      if (event.data && event.data.type === 'PROCESS_OFFLINE_QUEUE') {
+        if (window.offlineStore && typeof window.offlineStore.syncQueue === 'function') {
+          console.log('[App] Processing offline action queue...');
+          await window.offlineStore.syncQueue();
+        }
+      }
+    });
+    
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(estimate => {
+        const usageMB = (estimate.usage / (1024 * 1024)).toFixed(2);
+        const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
+        const storageEl = document.getElementById('pwa-storage-usage');
+        if (storageEl) {
+          storageEl.textContent = `Offline Storage: ${usageMB} MB / ${quotaMB} MB`;
+        }
+      });
+    }
+  });
+}
+
+function showUpdateToast(worker) {
+  let toast = document.getElementById('pwa-update-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'pwa-update-toast';
+    toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: rgba(16, 23, 42, 0.95); border: 1px solid var(--primary); padding: 1rem; border-radius: 8px; color: white; z-index: 10000; display: flex; gap: 1rem; align-items: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px);';
+    
+    const text = document.createElement('span');
+    text.textContent = 'A new version is available!';
+    
+    const btn = document.createElement('button');
+    btn.textContent = 'Refresh';
+    btn.style.cssText = 'background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600;';
+    btn.onclick = () => {
+      worker.postMessage({ type: 'SKIP_WAITING' });
+    };
+    
+    toast.appendChild(text);
+    toast.appendChild(btn);
+    document.body.appendChild(toast);
+  }
+}
+
+let refreshing = false;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+}
+
+// Offline/Online status handler
+window.addEventListener('load', () => {
+  function updateOnlineStatus() {
+    const banner = document.getElementById('offline-banner');
+    if (banner) {
+      if (navigator.onLine) {
+        banner.classList.add('hidden');
+      } else {
+        banner.classList.remove('hidden');
+      }
+    }
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+});
