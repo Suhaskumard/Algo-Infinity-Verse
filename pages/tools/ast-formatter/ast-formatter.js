@@ -82,7 +82,7 @@ console.log(calculateTotal(cart))`;
 
         } catch (error) {
             // Display Syntax Error
-            errorBanner.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Syntax Error: ${error.message}`;
+            errorBanner.textContent = `Syntax Error: ${error.message}`;
             errorBanner.classList.remove("hidden");
             console.error("AST Parsing Error:", error);
         }
