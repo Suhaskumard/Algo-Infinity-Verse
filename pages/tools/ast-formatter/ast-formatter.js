@@ -60,35 +60,24 @@ console.log(calculateTotal(cart))`;
         }
 
         try {
-            // Parse AST using Acorn
-            const ast = acorn.parse(rawCode, {
-                ecmaVersion: "latest",
-                sourceType: "module",
-                locations: true
-            });
-
-            // Construct Escodegen Formatting Options
-            let indentString = "    "; // 4 spaces
-            if (indentStyle.value === "2spaces") indentString = "  ";
-            else if (indentStyle.value === "tab") indentString = "\t";
+            // Construct Prettier Formatting Options
+            let tabWidth = 4;
+            let useTabs = false;
+            
+            if (indentStyle.value === "2spaces") tabWidth = 2;
+            else if (indentStyle.value === "tab") useTabs = true;
 
             const options = {
-                format: {
-                    indent: {
-                        style: indentString,
-                        base: 0,
-                        adjustMultilineComment: false
-                    },
-                    quotes: quoteStyle.value, // 'single', 'double', 'auto'
-                    semicolons: semiStyle.value === "true",
-                    space: " ",
-                    newline: "\n",
-                    safeConcatenation: true
-                }
+                parser: "babel",
+                plugins: prettierPlugins,
+                tabWidth: tabWidth,
+                useTabs: useTabs,
+                singleQuote: quoteStyle.value === "single",
+                semi: semiStyle.value === "true",
             };
 
-            // Generate Formatted Code using Escodegen
-            const formattedCode = escodegen.generate(ast, options);
+            // Generate Formatted Code using Prettier (AST internally)
+            const formattedCode = prettier.format(rawCode, options);
             outputEditor.setValue(formattedCode);
 
         } catch (error) {
