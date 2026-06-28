@@ -157,16 +157,30 @@ class DSASearchEngine {
     return matches;
   }
 
+  escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&`#39`;"
+    }[char]));
+  }
+
+  escapeRegExp(text) {
+    return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
   highlightText(text, terms) {
     if (!text) return "";
-    let highlighted = text;
+    let highlighted = this.escapeHtml(text);
     // Sort terms by length descending so longer words match first
     const sortedTerms = [...terms].sort((a, b) => b.length - a.length);
     
     sortedTerms.forEach(term => {
       // Use regex to match whole words mostly, but simple replace for now with case insensitivity
       // Match the term but don't match inside HTML tags if possible (basic approach)
-      const regex = new RegExp(`(${term})(?![^<]*>)`, "gi");
+      const regex = new RegExp(`(${this.escapeRegExp(term)})(?![^<]*>)`, "gi");
       highlighted = highlighted.replace(regex, `<mark class="search-highlight">$1</mark>`);
     });
     return highlighted;
