@@ -12,6 +12,11 @@ let quizDuration = 60; // Default duration in seconds
 let scoreAnimationId = null;
 let scoreInterval = null;
 
+// --- QUIZ PROGRESS STATE ---
+let currentQuestionIndex = 0;
+let totalQuestions = 0;
+let answeredQuestions = new Set();
+
 export function initQuiz({ containerId, questions, duration = 60 }) {
   const container = document.getElementById(containerId);
   if (!container || !questions || questions.length === 0) return;
@@ -108,6 +113,107 @@ export function initQuiz({ containerId, questions, duration = 60 }) {
     }
     timeLeft = quizDuration;
     isTimerRunning = false;
+  }
+
+  // --- QUIZ PROGRESS FUNCTIONS ---
+
+  /**
+   * Update quiz progress bar
+   * @param {number} current - Current question index (0-based)
+   * @param {number} total - Total number of questions
+   */
+  function updateQuizProgress(current, total) {
+    const progressBar = document.querySelector('.quiz-progress-fill');
+    const progressText = document.querySelector('.quiz-progress-text');
+    const progressContainer = document.querySelector('.quiz-progress-container');
+    
+    if (progressBar) {
+      const percentage = ((current + 1) / total) * 100;
+      progressBar.style.width = percentage + '%';
+      
+      // FORCE REPAINT FOR MOBILE - Critical fix for mobile devices
+      // This ensures mobile browsers redraw the element
+      progressBar.style.transform = 'translateZ(0)';
+      progressBar.style.webkitTransform = 'translateZ(0)';
+      
+      // Force reflow for mobile Safari - critical for iOS
+      void progressBar.offsetHeight;
+      
+      // Add smooth transition
+      progressBar.style.transition = 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+      
+      // Update progress color based on percentage
+      progressBar.classList.remove('progress-low', 'progress-medium', 'progress-high');
+      if (percentage < 30) {
+        progressBar.classList.add('progress-low');
+      } else if (percentage < 70) {
+        progressBar.classList.add('progress-medium');
+      } else {
+        progressBar.classList.add('progress-high');
+      }
+      
+      // Add completion animation when done
+      if (percentage === 100) {
+        progressBar.classList.add('complete');
+        setTimeout(() => {
+          progressBar.classList.remove('complete');
+        }, 1000);
+      }
+    }
+    
+    if (progressText) {
+      progressText.textContent = `${current + 1}/${total}`;
+    }
+    
+    if (progressContainer) {
+      // Update aria-valuenow for accessibility
+      progressContainer.setAttribute('aria-valuenow', ((current + 1) / total) * 100);
+      progressContainer.setAttribute('aria-valuetext', `Question ${current + 1} of ${total}`);
+    }
+  }
+
+  /**
+   * Reset quiz progress
+   * @param {number} total - Total number of questions
+   */
+  function resetQuizProgress(total) {
+    currentQuestionIndex = 0;
+    totalQuestions = total;
+    answeredQuestions = new Set();
+    updateQuizProgress(0, total);
+  }
+
+  /**
+   * Advance to next question and update progress
+   */
+  function nextQuestion() {
+    if (currentQuestionIndex < totalQuestions - 1) {
+      currentQuestionIndex++;
+      updateQuizProgress(currentQuestionIndex, totalQuestions);
+      
+      // Scroll to next question on mobile
+      const nextQuestionEl = document.getElementById(`question-block-${currentQuestionIndex}`);
+      if (nextQuestionEl && window.innerWidth <= 768) {
+        setTimeout(() => {
+          nextQuestionEl.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }, 300);
+      }
+    }
+  }
+
+  /**
+   * Get current progress status
+   */
+  function getProgressStatus() {
+    return {
+      current: currentQuestionIndex + 1,
+      total: totalQuestions,
+      percentage: ((currentQuestionIndex + 1) / totalQuestions) * 100,
+      answered: answeredQuestions.size
+    };
   }
 
   // --- SCORE ANIMATION FUNCTIONS ---
@@ -371,6 +477,29 @@ export function initQuiz({ containerId, questions, duration = 60 }) {
     `;
     container.appendChild(timerContainer);
     
+    // --- Progress Bar ---
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'quiz-progress-container';
+    progressContainer.setAttribute('role', 'progressbar');
+    progressContainer.setAttribute('aria-valuemin', '0');
+    progressContainer.setAttribute('aria-valuemax', '100');
+    progressContainer.setAttribute('aria-valuenow', '0');
+    progressContainer.innerHTML = `
+      <div class="quiz-progress-header">
+        <span class="quiz-progress-label">
+          <i class="fas fa-tasks"></i> Progress
+        </span>
+        <span class="quiz-progress-text">1/${currentQuestions.length}</span>
+      </div>
+      <div class="quiz-progress-track">
+        <div class="quiz-progress-fill" style="width: 0%;"></div>
+      </div>
+    `;
+    container.appendChild(progressContainer);
+    
+    // Reset progress
+    resetQuizProgress(currentQuestions.length);
+    
     const quizForm = document.createElement('form');
     quizForm.className = 'quiz-form';
     quizForm.id = `${containerId}-form`;
@@ -396,6 +525,18 @@ export function initQuiz({ containerId, questions, duration = 60 }) {
         optionInput.type = 'radio';
         optionInput.name = `question-${index}`;
         optionInput.value = option;
+        
+        // Add event listener to update progress on answer selection
+        optionInput.addEventListener('change', function() {
+          if (this.checked) {
+            // Update progress when answer is selected
+            answeredQuestions.add(index);
+            updateQuizProgress(index, currentQuestions.length);
+            
+            // Auto-advance to next question after short delay (optional)
+            // setTimeout(() => nextQuestion(), 800);
+          }
+        });
         
         const optionText = document.createElement('span');
         optionText.className = 'quiz-option-text';
@@ -549,12 +690,22 @@ export function initQuiz({ containerId, questions, duration = 60 }) {
 }
 
 // --- EXPORT FUNCTIONS ---
-// initQuiz is already exported inline above. The quiz timer/score/animation
-// helpers (startQuizTimer, animateScore, etc.) are declared inside initQuiz()
-// as closures and cannot be re-exported here — listing them produced a static
-// "Export 'animateScore' is not defined in module" SyntaxError that blocked the
-// whole module. Export only the module-scope getTimerStatus.
-export { getTimerStatus };
+export { 
+  startQuizTimer, 
+  stopQuizTimer, 
+  resetQuizTimer, 
+  updateTimerDisplay,
+  getTimerStatus,
+  animateScore,
+  animateScoreStepBased,
+  animateXP,
+  triggerCelebration,
+  createConfetti,
+  updateQuizProgress,
+  resetQuizProgress,
+  nextQuestion,
+  getProgressStatus
+};
 
 function getTimerStatus() {
   return {
