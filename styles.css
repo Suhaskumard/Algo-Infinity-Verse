@@ -560,6 +560,326 @@ body[data-page="signup"] .auth-switch {
   flex-wrap: wrap;
 }
 
+/* ===== NAVBAR SEARCH ===== */
+.nav-search {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  z-index: 10005;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.nav-search-input {
+  width: 100%;
+  padding: 0.5rem 2.25rem 0.5rem 2.25rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.nav-search-input:focus {
+  background: rgba(10, 10, 26, 0.95);
+  border-color: var(--primary);
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.3), var(--glass-shadow);
+}
+
+html.light-mode .nav-search-input:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.15), var(--glass-shadow);
+}
+
+.nav-search-input:focus + .search-icon {
+  color: var(--primary);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html.light-mode .clear-search-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Search Dropdown Suggestions */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: rgba(15, 15, 35, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), var(--glass-shadow);
+  max-height: 380px;
+  overflow-y: auto;
+  z-index: 10010;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+
+html.light-mode .search-dropdown {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), var(--glass-shadow);
+}
+
+.search-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-dropdown::-webkit-scrollbar-thumb {
+  background-color: var(--glass-border);
+  border-radius: 10px;
+}
+
+.search-dropdown-section {
+  padding: 8px 0;
+}
+
+.search-dropdown-section + .search-dropdown-section {
+  border-top: 1px solid var(--glass-border);
+}
+
+.search-section-title {
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  outline: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item:focus,
+.suggestion-item.selected {
+  background: rgba(255, 255, 255, 0.08);
+  padding-left: 20px;
+}
+
+html.light-mode .suggestion-item:hover,
+html.light-mode .suggestion-item:focus,
+html.light-mode .suggestion-item.selected {
+  background: rgba(0, 0, 0, 0.04);
+  padding-left: 20px;
+}
+
+.suggestion-item.selected {
+  border-left: 3px solid var(--primary);
+  padding-left: 17px;
+}
+
+.suggestion-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.suggestion-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.suggestion-path {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.suggestion-badge {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.suggestion-arrow {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-left: 12px;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.suggestion-item:hover .suggestion-arrow,
+.suggestion-item:focus .suggestion-arrow,
+.suggestion-item.selected .suggestion-arrow {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+.search-no-results,
+.search-recent-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-no-results i,
+.search-recent-empty i {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+}
+
+.search-highlight {
+  background: rgba(124, 58, 237, 0.3);
+  color: #fff;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+html.light-mode .search-highlight {
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--primary);
+}
+
+/* Recent Search item with remove option */
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.recent-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.recent-link i {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.recent-item:hover,
+.recent-item.selected {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.light-mode .recent-item:hover,
+html.light-mode .recent-item.selected {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.remove-recent-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.remove-recent-btn:hover {
+  color: #ef4444;
+}
+
+/* Responsive Search Positioning */
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 1200px) {
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: block !important;
+  }
+  
+  .nav-search-mobile {
+    padding: 1rem 0;
+    width: 100%;
+  }
+
+  .nav-search-mobile .nav-search {
+    max-width: none;
+  }
+}
+
 .nav-logo {
   display: flex;
   align-items: center;

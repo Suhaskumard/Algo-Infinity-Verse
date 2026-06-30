@@ -20,7 +20,12 @@
           isRefreshing = false;
           if (!res.ok) {
             // Silent redirect if refresh fails
-            if (window.location.pathname !== '/login.html' && window.location.pathname !== '/login') {
+            const path = window.location.pathname;
+            const isAuthPage = path === '/login.html' || path === '/login' || path.endsWith('/login.html') ||
+                               path === '/signup.html' || path === '/signup' || path.endsWith('/signup.html') ||
+                               path === '/verify-email' || path.endsWith('/verify-email.html') ||
+                               path === '/verify-email.html';
+            if (!isAuthPage) {
                window.location.href = '/login.html?session_expired=true';
             }
             throw new Error('Token refresh failed');
