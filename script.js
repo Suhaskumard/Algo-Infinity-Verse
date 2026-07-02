@@ -3859,6 +3859,8 @@ function showNextFact() {
     const factText = document.getElementById('factText');
     const factDate = document.getElementById('factDate');
     
+    if (!factText || !factDate) return;
+
     const randomIndex = Math.floor(Math.random() * facts.length);
     factText.textContent = facts[randomIndex];
     factDate.textContent = `💡 Fun fact #${randomIndex + 1}`;
@@ -3868,6 +3870,8 @@ function showDailyFact() {
     const factText = document.getElementById('factText');
     const factDate = document.getElementById('factDate');
     
+    if (!factText || !factDate) return;
+
     factText.textContent = getDailyFact();
     const today = new Date().toLocaleDateString();
     factDate.textContent = `📅 Fact of the day • ${today}`;
@@ -4628,92 +4632,8 @@ window.addEventListener('load', () => {
 });
 
 // ============================================
-// PROBLEM FILTERING WITH CORRECT COUNT
-// ============================================
 
-/**
- * Update the problem count display
- * @param {Array} filteredProblems - Array of filtered problems
- */
-function updateProblemCount(filteredProblems) {
-    // Update visible count
-    const visibleCountEl = document.getElementById('visible-count');
-    if (visibleCountEl) {
-        const total = filteredProblems.length;
-        visibleCountEl.textContent = total;
-    }
-    
-    // Update total count (if separate)
-    const totalCountEl = document.getElementById('total-count');
-    if (totalCountEl) {
-        // This should show total problems before filtering
-        const allProblems = getAllProblems();
-        totalCountEl.textContent = allProblems.length;
-    }
-    
-    // Update the problem count display (legacy)
-    const countElement = document.querySelector('.problem-count');
-    if (countElement) {
-        const total = filteredProblems.length;
-        countElement.textContent = `${total} problem${total !== 1 ? 's' : ''}`;
-    }
-    
-    // Show/hide empty state
-    const emptyState = document.getElementById('emptyState');
-    if (emptyState) {
-        if (filteredProblems.length === 0) {
-            emptyState.classList.remove('hidden');
-        } else {
-            emptyState.classList.add('hidden');
-        }
-    }
-}
 
-/**
- * Get all problems (from your data source)
- * @returns {Array} All practice problems
- */
-function getAllProblems() {
-    // Use your existing problems data
-    return practiceProblems || window.practiceProblems || [];
-}
-
-/**
- * Filter problems based on selected difficulty
- * @param {string} difficulty - 'all', 'easy', 'medium', 'hard'
- * @param {Array} problems - Problems to filter
- * @returns {Array} Filtered problems
- */
-function filterProblemsByDifficulty(difficulty, problems) {
-    if (difficulty === 'all') {
-        return problems;
-    }
-    return problems.filter(problem => 
-        problem.difficulty.toLowerCase() === difficulty.toLowerCase()
-    );
-}
-
-/**
- * Main filter function - handles filtering AND count update
- */
-function filterProblems() {
-    const selectedDifficulty = getSelectedDifficulty();
-    const allProblems = getAllProblems();
-    
-    // Filter problems
-    const filtered = filterProblemsByDifficulty(selectedDifficulty, allProblems);
-    
-    // Render filtered problems
-    renderProblems(filtered);
-    
-    // Update count
-    updateProblemCount(filtered);
-    
-    // Update URL hash if needed (for bookmarking)
-    if (selectedDifficulty !== 'all') {
-        window.location.hash = `filter=${selectedDifficulty}`;
-    }
-}
 
 /**
  * Get filter from URL hash on page load
