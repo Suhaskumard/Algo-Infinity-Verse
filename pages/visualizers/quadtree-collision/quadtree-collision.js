@@ -114,6 +114,7 @@ class QuadTree {
             if (this.northwest.insert(particle)) return true;
             if (this.southeast.insert(particle)) return true;
             if (this.southwest.insert(particle)) return true;
+            return false;
         }
     }
 
