@@ -221,9 +221,10 @@ input:checked + .slider:before {
     gap: 0.25rem;
 }
 
-.tel-box.warning { border-left: 3px solid #f59e0b; }
-.tel-box.info { border-left: 3px solid #3b82f6; }
-.tel-box.danger { border-left: 3px solid #ef4444; } /* dynamic */
+.tel-box.warning { border-left: 3px solid `#f59e0b`; }
+.tel-box.info { border-left: 3px solid `#3b82f6`; }
+.tel-box.danger { border-left: 3px solid `#ef4444`; } /* dynamic */
+.tel-box.good { border-left: 3px solid `#10b981`; } /* dynamic */
 
 .tel-label {
     font-size: 0.75rem;
