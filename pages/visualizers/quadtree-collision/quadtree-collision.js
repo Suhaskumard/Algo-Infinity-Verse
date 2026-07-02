@@ -90,8 +90,7 @@ class Rectangle {
 // ==========================================
 
 class QuadTree {
-class QuadTree {
-    constructor(boundary, capacity, depth = 0) {
+    constructor(boundary, capacity) {
         this.boundary = boundary;
         this.capacity = capacity;
         this.particles = [];
