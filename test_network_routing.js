@@ -33,6 +33,11 @@ const server = http.createServer((req, res) => {
     });
 });
 
+server.on('error', (err) => {
+    console.error('Test server failed to start:', err.message);
+    process.exit(1);
+});
+
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
 server.listen(PORT, async () => {
