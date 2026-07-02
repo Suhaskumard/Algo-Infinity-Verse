@@ -565,6 +565,12 @@ function animatePath(pathIds, index) {
     const n1 = nodes.find(n => n.id === pathIds[index]);
     const n2 = nodes.find(n => n.id === pathIds[index+1]);
 
+    if (!n1 || !n2) {
+        // Topology changed mid-flight; abort gracefully
+        els.sendBtn.disabled = false;
+        return;
+    }
+
     const packet = packetGroup.append("circle")
         .attr("class", "packet")
         .attr("r", 6)
