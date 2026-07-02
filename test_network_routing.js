@@ -121,9 +121,10 @@ server.listen(PORT, async () => {
 
     } catch (error) {
         console.error('\n❌ Test execution failed:', error.message);
+        process.exitCode = 1;
     } finally {
         if (browser) await browser.close();
         server.close();
-        process.exit(0);
+        process.exit(process.exitCode ?? 0);
     }
 });
