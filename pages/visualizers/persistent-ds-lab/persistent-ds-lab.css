@@ -78,6 +78,11 @@
   transition: border-color 0.2s ease;
 }
 .pd-select:focus { border-color: #06b6d4; }
+/* --- THE CONTRAST FIX FOR OP ROW DROPDOWN --- */
+.pd-select option {
+  background-color: #0f172a; /* Use your dark background color here */
+  color: #ffffff;            /* Force white text */
+}
 
 .pd-val-input {
   background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
@@ -148,9 +153,34 @@
 .pd-ver-op { font-size: 0.65rem; color: rgba(148,163,184,0.5); font-family: Poppins, sans-serif; }
 
 /* Compare */
-.pd-compare-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; }
-.pd-compare-sel { flex: 1; }
-.pd-compare-vs { font-size: 0.72rem; color: var(--text-secondary); flex-shrink: 0; }
+.pd-compare-row { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.4rem; 
+  margin-bottom: 0.5rem; 
+  width: 100%; /* Ensures the row stays bound to the sidebar width */
+}
+
+.pd-compare-sel { 
+  flex: 1; 
+  /* --- THE CLIPPING FIX --- */
+  min-width: 0;            /* CRITICAL: Allows flex child to shrink below inherent text width */
+  text-overflow: ellipsis; /* Adds the '...' */
+  white-space: nowrap;     /* Prevents text from wrapping to a new line */
+  overflow: hidden;        /* Hides the overflow text */
+}
+
+/* --- THE CONTRAST FIX --- */
+.pd-compare-sel option {
+  background-color: #0f172a; /* Use your dark background color here */
+  color: #ffffff;            /* Force white text so it is visible without hovering */
+}
+
+.pd-compare-vs { 
+  font-size: 0.72rem; 
+  color: var(--text-secondary); 
+  flex-shrink: 0; 
+}
 
 .pd-compare-btn, .pd-compare-clear-btn {
   width: 100%; padding: 0.38rem 0.5rem; font-size: 0.72rem; font-weight: 600;
@@ -163,22 +193,6 @@
 .pd-compare-btn:hover { background: rgba(168,85,247,0.2); }
 .pd-compare-clear-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); color: var(--text-secondary); }
 .pd-compare-clear-btn:hover { color: var(--text-primary); }
-
-/* Memory stats */
-.pd-memory-section { margin-top: auto; }
-.pd-mem-stat-row { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-secondary); padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.pd-mem-stat-row:last-of-type { border-bottom: none; }
-.pd-mem-val { font-weight: 700; color: var(--text-primary); font-family: Fira Code, monospace; }
-.pd-mem-naive { color: #ef4444; }
-.pd-mem-saved { color: #22c55e; }
-.pd-mem-saved-row { margin-top: 0.2rem; }
-
-.pd-mem-bar-wrap { margin-top: 0.65rem; }
-.pd-mem-bar-track { height: 8px; border-radius: 4px; background: rgba(239,68,68,0.3); overflow: hidden; margin-bottom: 0.25rem; }
-.pd-mem-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #06b6d4, #a855f7); transition: width 0.4s ease; }
-.pd-mem-bar-labels { display: flex; justify-content: space-between; font-size: 0.6rem; color: rgba(148,163,184,0.4); }
-.pd-mem-pct { font-size: 0.72rem; font-weight: 700; color: #22c55e; font-family: Fira Code, monospace; text-align: center; margin-top: 0.3rem; }
-
 /* ── Canvas area ── */
 .pd-canvas-area {
   display: flex;
