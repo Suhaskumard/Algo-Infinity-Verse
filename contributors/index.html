@@ -1,208 +1,64 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Contributors - Algo-Infinity-Verse</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <style>
-      .contributors-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 6rem 1.5rem 2rem;
-      }
-      .contributors-header {
-        text-align: center;
-        padding: 2rem 0 3rem;
-      }
-      .contributors-header h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        color: transparent;
-      }
-      .contributors-header p {
-        color: #9ca3af;
-        font-size: 1.1rem;
-        margin-top: 0.5rem;
-      }
-      .leaderboard-section {
-        margin: 2rem 0;
-      }
-      .leaderboard {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        background: #1f2937;
-        border-radius: 12px;
-        padding: 1rem;
-      }
-      .leaderboard-item {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 0.75rem 1rem;
-        background: #374151;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s;
-        cursor: pointer;
-      }
-      .leaderboard-item:hover {
-        transform: translateX(5px);
-      }
-      .leaderboard-rank {
-        font-size: 1.5rem;
-        font-weight: 700;
-        min-width: 50px;
-        color: #9ca3af;
-      }
-      .leaderboard-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: #4b5563;
-        overflow: hidden;
-      }
-      .leaderboard-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .leaderboard-info {
-        flex: 1;
-      }
-      .leaderboard-name {
-        font-weight: 600;
-        font-size: 1rem;
-        color: #f3f4f6;
-      }
-      .leaderboard-stats {
-        display: flex;
-        gap: 1rem;
-        font-size: 0.85rem;
-        color: #9ca3af;
-      }
-      .leaderboard-stats span {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-      }
-      .contributors-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-top: 1.5rem;
-      }
-      .contributor-card {
-        background: #1f2937;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        transition: all 0.3s;
-        text-align: center;
-        cursor: pointer;
-      }
-      .contributor-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-      }
-      .contributor-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        margin: 0 auto 1rem;
-        background: #4b5563;
-        overflow: hidden;
-      }
-      .contributor-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .contributor-name {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-        color: #f3f4f6;
-      }
-      .contributor-username {
-        color: #9ca3af;
-        font-size: 0.9rem;
-        margin-bottom: 0.75rem;
-      }
-      .contributor-badges {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 1rem;
-        min-height: 28px;
-      }
-      .badge {
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contributors - Algo-Infinity-Verse</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .contributors-container { max-width: 1200px; margin: 0 auto; padding: 6rem 1.5rem 2rem; }
+    .contributors-header { text-align: center; padding: 2rem 0 3rem; }
+    .contributors-header h1 { font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+    .contributors-header p { color: #9ca3af; font-size: 1.1rem; margin-top: 0.5rem; }
+    .leaderboard-section { margin: 2rem 0; }
+    .leaderboard { display: flex; flex-direction: column; gap: 0.5rem; background: #1f2937; border-radius: 12px; padding: 1rem; }
+    .leaderboard-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: #374151; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; cursor: pointer; }
+    .leaderboard-item:hover { transform: translateX(5px); }
+    .leaderboard-rank { font-size: 1.5rem; font-weight: 700; min-width: 50px; color: #9ca3af; }
+    .leaderboard-avatar { width: 48px; height: 48px; border-radius: 50%; background: #4b5563; overflow: hidden; }
+    .leaderboard-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .leaderboard-info { flex: 1; }
+    .leaderboard-name { font-weight: 600; font-size: 1rem; color: #f3f4f6; }
+    .leaderboard-stats { display: flex; gap: 1rem; font-size: 0.85rem; color: #9ca3af; }
+    .leaderboard-stats span { display: flex; align-items: center; gap: 0.25rem; }
+    .contributors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    .contributor-card { background: #1f2937; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all 0.3s; text-align: center; cursor: pointer; }
+    .contributor-card:hover { transform: translateY(-5px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .contributor-avatar { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 1rem; background: #4b5563; overflow: hidden; }
+    .contributor-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .contributor-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; color: #f3f4f6; }
+    .contributor-username { color: #9ca3af; font-size: 0.9rem; margin-bottom: 0.75rem; }
+    .contributor-badges { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin-bottom: 1rem; min-height: 28px; }
+    
+    .badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         width: auto !important;
-        height: auto !important;
-        gap: 5px;
-        font-size: 12px;
-        font-weight: 500;
-        letter-spacing: 0.01em;
-        padding: 4px 10px;
-        border-radius: 6px;
-        border: 0.5px solid;
+        height: 35px !important;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 15px;
+        border-radius: 9px;
+        border: 1px solid;
         transition: opacity 0.15s;
         white-space: nowrap;
-      }
-      .badge i {
-        font-size: 13px;
-      }
-
-      /* Dark mode defaults (your site's default) */
-      .badge-gold {
-        background: #412402;
-        color: #fac775;
-        border-color: #854f0b;
-      }
-      .badge-silver {
-        background: #2c2c2a;
-        color: #d3d1c7;
-        border-color: #5f5e5a;
-      }
-      .badge-bronze {
-        background: #4a1b0c;
-        color: #f0997b;
-        border-color: #993c1d;
-      }
-      .badge-purple {
-        background: #26215c;
-        color: #cecbf6;
-        border-color: #534ab7;
-      }
-      .badge-green {
-        background: #04342c;
-        color: #9fe1cb;
-        border-color: #0f6e56;
-      }
-      .badge-blue {
-        background: #042c53;
-        color: #b5d4f4;
-        border-color: #185fa5;
-      }
+    }
+    .badge i {
+        font-size: 12px;
+    }
+    
+    /* Dark mode defaults (your site's default) */
+    .badge-gold   { background: #412402; color: #FAC775; border-color: #854F0B; }
+    .badge-silver { background: #2C2C2A; color: #D3D1C7; border-color: #5F5E5A; }
+    .badge-bronze { background: #4A1B0C; color: #F0997B; border-color: #993C1D; }
+    .badge-purple { background: #26215C; color: #CECBF6; border-color: #534AB7; }
+    .badge-green  { background: #04342C; color: #9FE1CB; border-color: #0F6E56; }
+    .badge-blue   { background: #042C53; color: #B5D4F4; border-color: #185FA5; }
 
       /* Light mode overrides */
       .light-mode .badge-gold {
@@ -899,7 +755,7 @@
         }
       }
 
-      window.addEventListener("DOMContentLoaded", loadContributors);
-    </script>
-  </body>
+    window.addEventListener('DOMContentLoaded', loadContributors);
+  </script>
+</body>
 </html>
