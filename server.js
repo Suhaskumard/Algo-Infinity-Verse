@@ -2880,6 +2880,72 @@ if (pathname === "/api/forgot-password" && req.method === "POST") {
       return sendJson(res, 500, { error: "Failed to save snapshots." });
     }
   }
+  // ── AI Hint (progressive) ────────────────────────────────────────────────
+  if (pathname === "/api/hint" && req.method === "POST") {
+    if (!applyRateLimit(req, res, sdlcAdvisorLimiter, "Too many hint requests. Please try again later.")) {
+      return;
+    }
+
+    let payload;
+    try {
+      payload = await readJsonBody(req);
+    } catch {
+      return sendJson(res, 400, { error: "Invalid JSON body." });
+    }
+
+    const title = String(payload.title || "").trim();
+    const description = String(payload.description || "").trim();
+    const level = Number(payload.level) || 1;
+    const previousHints = Array.isArray(payload.previousHints)
+      ? payload.previousHints.filter((h) => typeof h === "string").slice(0, 10)
+      : [];
+
+    if (!title) {
+      return sendJson(res, 400, { error: "Problem title is required." });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return sendJson(res, 503, { error: "AI hints unavailable (GEMINI_API_KEY not set)." });
+    }
+
+    const prompt =
+      `You are a Data Structures & Algorithms tutor giving PROGRESSIVE hints ` +
+      `for the problem "${title}".` +
+      (description ? `\nProblem: ${description}` : "") +
+      `\nHints already shown to the student:\n` +
+      (previousHints.length
+        ? previousHints.map((h, i) => `${i + 1}. ${h}`).join("\n")
+        : "(none yet)") +
+      `\n\nGive ONLY the next single hint (hint level ${level}). One or two sentences. ` +
+      `Do NOT reveal the full solution or complete code. Build on the earlier hints ` +
+      `without repeating them. Escalate by level: 1 = gentle nudge, 2 = key idea, ` +
+      `3 = approach + data structure, 4 = high-level pseudocode outline.`;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 160 },
+          }),
+        }
+      );
+      const result = await response.json();
+      const raw = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!raw) {
+        return sendJson(res, 502, { error: "No hint was generated. Please try again." });
+      }
+      const hint = raw.replace(/\*/g, "").replace(/`/g, "").trim();
+      return sendJson(res, 200, { success: true, hint });
+    } catch (error) {
+      console.error("AI hint error:", error);
+      return sendJson(res, 500, { error: "Failed to generate hint." });
+    }
+  }
 
   // ── Leaderboard ──────────────────────────────────────────────────────────
   if (pathname === "/api/leaderboard" && req.method === "GET") {
