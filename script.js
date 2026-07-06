@@ -768,6 +768,9 @@ async function submitQuizCode() {
     }
     renderTestCases(testCases, result.testResults);
     if (result.allPassed) {
+      if (window.spacedRepetition) {
+        window.spacedRepetition.scheduleReview(problem.id, problem.topic || 'Practice', problem.difficulty || 'Medium', true, 30);
+      }
       if (!userProgress.submittedSolutions) userProgress.submittedSolutions = {};
       userProgress.submittedSolutions[problem.id] = { code: code, lang: lang, date: new Date().toISOString() };
       userProgress.completedProblems.push(problem.id);
@@ -791,6 +794,9 @@ async function submitQuizCode() {
       }
       showNotification("Problem solved! +" + getXPForDifficulty(difficulty) + " XP. Rate recall difficulty below.", "success");
     } else {
+      if (window.spacedRepetition) {
+        window.spacedRepetition.scheduleReview(problem.id, problem.topic || 'Practice', problem.difficulty || 'Medium', false, 30);
+      }
       const failures = result.testResults.filter(r => r && !r.passed);
       setOutput(failures.length + " / " + result.testResults.length + " tests failed. Fix the issues and try again.", "error");
       showNotification(failures.length + " test(s) failed. Keep trying!", "error");
