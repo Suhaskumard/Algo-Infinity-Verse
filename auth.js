@@ -570,11 +570,14 @@
             renderAuthNav();
             updateProfileNames(currentSession.user);
           } else {
-            void 0;
+            const errorBody = await response.text().catch(() => "Unknown error");
+            console.error("[auth] Supabase bridge failed:", response.status, errorBody);
           }
+        } else {
+          console.debug("[auth] No Supabase access token in session");
         }
       } catch (error) {
-        void 0;
+        console.error("[auth] Supabase bridge error:", error);
       }
     }
 

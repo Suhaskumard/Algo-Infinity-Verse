@@ -255,7 +255,7 @@ let currentProblem = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded fired, initializing app...');
-    loadUserData();
+    if (typeof loadUserData === 'function') loadUserData();
     initLoadingScreen();
     initNavbar();
     initHeroSection();
@@ -290,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Apply saved theme only after DOM is ready to avoid touching document.body too early
 
-  loadUserData();
+  if (typeof loadUserData === 'function') loadUserData();
   initLoadingScreen();
   initNavbar();
   initHeroSection();
