@@ -375,9 +375,16 @@ async function syncUserProgress() {
   if (!navigator.onLine) {
     // Queue offline sync
     if (window.StorageDB && window.DB_STORES) {
-        let queue = await window.StorageDB.get(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue') || [];
-        queue.push(payload);
-        await window.StorageDB.set(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue', queue);
+        try {
+            let queue = await window.StorageDB.get(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue') || [];
+            queue.push(payload);
+            await window.StorageDB.set(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue', queue);
+        } catch(e) {
+            console.error("StorageDB unavailable, falling back to localStorage", e);
+            let queue = JSON.parse(localStorage.getItem('offlineSyncQueue') || '[]');
+            queue.push(payload);
+            localStorage.setItem('offlineSyncQueue', JSON.stringify(queue));
+        }
     } else {
         let queue = JSON.parse(localStorage.getItem('offlineSyncQueue') || '[]');
         queue.push(payload);
