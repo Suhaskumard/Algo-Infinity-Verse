@@ -1,4 +1,4 @@
-name: NSOC Label + Duplicate Handler
+name: SSOC Label + Duplicate Handler
 
 on:
   issues:
