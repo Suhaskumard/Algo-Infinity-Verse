@@ -337,6 +337,29 @@ async function loadLeaderboard() {
 }
 cachedSession = null;
 progressSyncTimer = null;
+
+// Handle coming back online
+window.addEventListener('online', async () => {
+    if (window.StorageDB && window.DB_STORES) {
+        const queue = await window.StorageDB.get(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue') || [];
+        if (queue.length > 0) {
+            console.log("Reconnected. Syncing offline data...");
+            for (const payload of queue) {
+                try {
+                    await fetch("/api/progress", { 
+                      method: "PUT",
+                      credentials: "include", 
+                      headers: { "Content-Type": "application/json" }, 
+                      body: JSON.stringify(payload) 
+                    });
+                } catch(e) { console.error("Failed to sync", e); }
+            }
+            await window.StorageDB.set(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue', []);
+            if (typeof updateLeaderboard === 'function') updateLeaderboard();
+        }
+    }
+});
+
 async function syncUserProgress() {
   const session = await getAuthenticatedSession();
   if (!session?.authenticated) return;
@@ -351,9 +374,15 @@ async function syncUserProgress() {
 
   if (!navigator.onLine) {
     // Queue offline sync
-    let queue = JSON.parse(localStorage.getItem('offlineSyncQueue') || '[]');
-    queue.push(payload);
-    localStorage.setItem('offlineSyncQueue', JSON.stringify(queue));
+    if (window.StorageDB && window.DB_STORES) {
+        let queue = await window.StorageDB.get(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue') || [];
+        queue.push(payload);
+        await window.StorageDB.set(window.DB_STORES.SYNC_QUEUE, 'offlineSyncQueue', queue);
+    } else {
+        let queue = JSON.parse(localStorage.getItem('offlineSyncQueue') || '[]');
+        queue.push(payload);
+        localStorage.setItem('offlineSyncQueue', JSON.stringify(queue));
+    }
     
     // Register background sync if supported
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
