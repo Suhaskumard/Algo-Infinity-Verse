@@ -3547,6 +3547,117 @@ socket.on('battle-progress-update', (data) => {
     io.to(roomId).emit("receive-study-chat", { userName, text });
   });
 
+  // ============================================================
+  // COLLABORATIVE WHITEBOARD (#1780)
+  // ============================================================
+  
+  socket.on("wb-join", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true },
+      userId: { type: "string", required: true },
+      userName: { type: "string", required: true },
+      color: { type: "string", required: true }
+    });
+    if (!valid) return;
+    
+    const wbRoom = "wb_" + valid.roomId;
+    socket.join(wbRoom);
+    socket.wbRoomId = valid.roomId;
+    socket.wbUserId = valid.userId;
+    
+    socket.to(wbRoom).emit("wb-user-joined", valid);
+  });
+
+  socket.on("wb-stroke", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true },
+      points: { type: "object", required: true }, // array of points
+      color: { type: "string", required: true },
+      size: { type: "number", required: true },
+      tool: { type: "string", required: true }
+    });
+    if (!valid) return;
+    socket.to("wb_" + valid.roomId).emit("wb-stroke", valid);
+  });
+
+  socket.on("wb-shape", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true },
+      shape: { type: "string", required: true },
+      x0: { type: "number", required: true },
+      y0: { type: "number", required: true },
+      x1: { type: "number", required: true },
+      y1: { type: "number", required: true },
+      color: { type: "string", required: true },
+      size: { type: "number", required: true }
+    });
+    if (!valid) return;
+    socket.to("wb_" + valid.roomId).emit("wb-shape", valid);
+  });
+
+  socket.on("wb-text", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true },
+      text: { type: "string", required: true },
+      x: { type: "number", required: true },
+      y: { type: "number", required: true },
+      color: { type: "string", required: true },
+      fontSize: { type: "number", required: true }
+    });
+    if (!valid) return;
+    socket.to("wb_" + valid.roomId).emit("wb-text", valid);
+  });
+
+  socket.on("wb-clear", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true }
+    });
+    if (!valid) return;
+    socket.to("wb_" + valid.roomId).emit("wb-clear");
+  });
+
+  socket.on("wb-undo", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true },
+      imageData: { type: "string", required: true }
+    });
+    if (!valid) return;
+    socket.to("wb_" + valid.roomId).emit("wb-undo", valid);
+  });
+
+  socket.on("wb-cursor", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true },
+      userId: { type: "string", required: true },
+      userName: { type: "string", required: true },
+      x: { type: "number", required: true },
+      y: { type: "number", required: true },
+      color: { type: "string", required: true }
+    });
+    if (!valid) return;
+    socket.to("wb_" + valid.roomId).emit("wb-cursor", valid);
+  });
+
+  socket.on("wb-leave", (data) => {
+    const valid = validateSocketInput(data, {
+      roomId: { type: "string", required: true },
+      userId: { type: "string", required: true }
+    });
+    if (!valid) return;
+    const wbRoom = "wb_" + valid.roomId;
+    socket.to(wbRoom).emit("wb-user-left", valid);
+    socket.leave(wbRoom);
+  });
+
+  // Handle clean disconnect for whiteboard
+  socket.on("disconnect", () => {
+    if (socket.wbRoomId && socket.wbUserId) {
+      const wbRoom = "wb_" + socket.wbRoomId;
+      socket.to(wbRoom).emit("wb-user-left", { userId: socket.wbUserId });
+    }
+  });
+
+
   socket.on("join-room", (roomId, userId) => {
       socket.join(roomId);
       // Store user mapping
