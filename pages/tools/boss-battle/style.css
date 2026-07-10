@@ -51,6 +51,23 @@ body {
     height: calc(100vh - 54px);
 }
 
+`@media` (max-width: 768px) {
+    .game-container {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 54px);
+    }
+
+    .arena-panel {
+        border-right: none;
+        border-bottom: 4px solid var(--border-color);
+    }
+
+    `#code-editor` {
+        min-height: 300px;
+    }
+}
+
 /* Arena Panel */
 .arena-panel {
     flex: 1.2;
