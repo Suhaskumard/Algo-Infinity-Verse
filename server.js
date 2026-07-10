@@ -3601,7 +3601,7 @@ socket.on('escape-code-update', (data) => {
     roomId: { type: 'string', required: true },
     code: { type: 'string', string: true }
   });
-  if (!valid) return;
+  if (!valid || socket.escapeRoomId !== valid.roomId) return;
   socket.to(`escape_${valid.roomId}`).emit('escape-code-update', valid);
 });
 
@@ -3611,7 +3611,7 @@ socket.on('escape-chat', (data) => {
     userName: { type: 'string', required: true },
     message: { type: 'string', string: true }
   });
-  if (!valid) return;
+  if (!valid || socket.escapeRoomId !== valid.roomId) return;
   socket.to(`escape_${valid.roomId}`).emit('escape-chat', valid);
 });
 
@@ -3622,7 +3622,7 @@ socket.on('escape-puzzle-solved', (data) => {
     userName: { type: 'string', required: true },
     puzzleId: { type: 'string', required: true }
   });
-  if (!valid) return;
+  if (!valid || socket.escapeRoomId !== valid.roomId) return;
   socket.to(`escape_${valid.roomId}`).emit('escape-puzzle-solved', valid);
 });
 
