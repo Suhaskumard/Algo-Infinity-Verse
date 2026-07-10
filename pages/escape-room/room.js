@@ -7,6 +7,7 @@ const userName = urlParams.get('user') || 'Anonymous Hacker';
 
 if (!roomId) {
     window.location.href = 'index.html';
+    return;
 }
 
 document.getElementById('room-id-display').innerText = `[ROOM: ${roomId}]`;
