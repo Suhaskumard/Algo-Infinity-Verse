@@ -44,16 +44,20 @@
 - Acceptance rate tracking
 - Visual completion badges
 
-#### Favorite Problems (New Feature)
+#### Favorite Problems & Smart Collections
 
 Users can:
 - Mark practice problems as favorites
 - Filter favorite problems
-- Persist favorites using localStorage
+- Organize favorites into custom bookmark collections
+- Search and filter collections by name, description, and contained problems
+- Persist everything using localStorage and the existing user progress store
 
 **How it works:**
-- Click the heart icon on any practice problem
-- Use the "Favorites" filter to view saved problems
+- Click the heart icon on any practice problem to add it to favorites
+- Use the new collection form on the Practice Problems page to create custom collections
+- Choose one or more collections per problem from the collection picker beneath each card
+- Use the collection dashboard on the dashboard/profile views to review collection stats
 
 ----
 

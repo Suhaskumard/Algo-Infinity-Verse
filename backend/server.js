@@ -12,11 +12,27 @@ import { setupApiRoutes } from "./routes/apiRoutes.js";
 import { CodingPersonalityAnalyzer } from "./personalityAnalyzer.js";
 import { applySM2 } from "./utils/sm2.js";
 import { getSession, clearSessionCookie } from "./utils/sessionToken.js";
+import { commonPasswords } from "./config/passwordBlacklist.js";
+import { validateAndNormalizeEmail } from "./utils/emailValidation.js";
 
 const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_RESUME_FILE_SIZE_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'application/pdf',                                                      // .pdf
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/msword'                                                    // .doc
+    ];
+
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true); // Accept file
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOC, and DOCX files are allowed.'), false); // Reject file
+    }
+  }
 }).single("resume");
 
 const __filename = fileURLToPath(import.meta.url);
@@ -306,68 +322,43 @@ async function updateMemoryStore(mutator) {
 
 function validateSignup({ name, email, password, confirmPassword }) {
   const cleanName = String(name || "").trim();
-  const cleanEmail = String(email || "")
-    .trim()
-    .toLowerCase();
   const rawPassword = String(password || "");
   const rawConfirm = String(confirmPassword || "");
 
-  if (cleanName.length < 2) return "Name must be at least 2 characters.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-    return "Enter a valid email address.";
-  }
+  if (cleanName.length < 2) return { isValid: false, error: "Name must be at least 2 characters." };
 
-  // Strong Password Validation
-  if (rawPassword.length < 8) {
-    return "Password must be at least 8 characters long.";
+  // ✅ Reusable email validator
+  const emailValidation = validateAndNormalizeEmail(email);
+  if (!emailValidation.valid) {
+    return { isValid: false, error: emailValidation.error };
   }
-  if (rawPassword.length > 64) {
-    return "Password must not exceed 64 characters.";
-  }
-  if (!/[a-z]/.test(rawPassword)) {
-    return "Password must include at least one lowercase letter.";
-  }
-  if (!/[A-Z]/.test(rawPassword)) {
-    return "Password must include at least one uppercase letter.";
-  }
-  if (!/\d/.test(rawPassword)) {
-    return "Password must include at least one number.";
-  }
-  if (!/[!@#$%^&*()_+\-=\[\]{};:'"|,.<>?/~`]/.test(rawPassword)) {
-    return "Password must include at least one special character (!@#$%^&* etc.).";
-  }
+  const cleanEmail = emailValidation.normalizedEmail; // Normalized email
 
   // Common weak passwords check
+  // Password strength checks
+  if (rawPassword.length < 8) return { isValid: false, error: "Password must be at least 8 characters long." };
+  if (rawPassword.length > 64) return { isValid: false, error: "Password must not exceed 64 characters." };
+  if (!/[a-z]/.test(rawPassword)) return { isValid: false, error: "Password must include at least one lowercase letter." };
+  if (!/[A-Z]/.test(rawPassword)) return { isValid: false, error: "Password must include at least one uppercase letter." };
+  if (!/\d/.test(rawPassword)) return { isValid: false, error: "Password must include at least one number." };
+  if (!/[!@#$%^&*()_+\-=\[\]{};:'"|,.<>?/~`]/.test(rawPassword)) return { isValid: false, error: "Password must include at least one special character (!@#$%^&* etc.)." };
+
+  // ✅ Common weak passwords check (Properly placed inside function)
   const commonPasswords = [
-    "password123",
-    "password1234",
-    "password12345",
-    "12345678",
-    "123456789",
-    "qwerty123",
-    "qwertyuiop",
-    "admin123",
-    "letmein123",
-    "welcome123",
-    "monkey123",
-    "1234567890",
-    "abcdefgh",
-    "abc12345",
-    "password1",
-    "passw0rd",
-    "p@ssw0rd",
-    "P@ssw0rd",
-    "Password123",
-    "Password123!",
-    "Admin@123",
-    "admin@123",
+    "password123", "password1234", "password12345", "12345678", "123456789",
+    "qwerty123", "qwertyuiop", "admin123", "letmein123", "welcome123",
+    "monkey123", "1234567890", "abcdefgh", "abc12345", "password1",
+    "passw0rd", "p@ssw0rd", "P@ssw0rd", "Password123", "Password123!",
+    "Admin@123", "admin@123"
   ];
   if (commonPasswords.includes(rawPassword.toLowerCase())) {
-    return "Password is too common or weak. Please choose a stronger password.";
+    return { isValid: false, error: "Password is too common or weak. Please choose a stronger password." };
   }
 
-  if (rawPassword !== rawConfirm) return "Passwords do not match.";
-  return null;
+  if (rawPassword !== rawConfirm) return { isValid: false, error: "Passwords do not match." };
+
+  // ✅ Return validated object
+  return { isValid: true, normalizedEmail: cleanEmail, error: null };
 }
 
 async function readJsonBody(req) {
