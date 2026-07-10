@@ -258,15 +258,16 @@ body {
     box-shadow: 0 0 10px var(--hp-red);
 }
 
-#code-editor {
+`#code-editor` {
     flex: 1;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    background: `#1e1e1e`;
+    color: `#d4d4d4`;
     border: none;
     padding: 15px;
     font-family: 'Courier New', Courier, monospace;
     font-size: 16px;
-    outline: none;
+    outline: 2px solid var(--xp-blue);
+    outline-offset: -2px;
     resize: none;
 }
 
