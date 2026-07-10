@@ -222,9 +222,12 @@ function runTests() {
     btnRun.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running`;
 
     const worker = new Worker(workerUrl);
+    let settled = false;
     
     // Infinite loop protection timeout (2 seconds)
     const timeoutId = setTimeout(() => {
+        if (settled) return;
+        settled = true;
         worker.terminate();
         log(`Execution Timed Out (Infinite Loop Detected!)`, 'var(--accent-red)');
         btnRun.disabled = false;
@@ -232,6 +235,8 @@ function runTests() {
     }, 2000);
 
     worker.onmessage = function(e) {
+        if (settled) return;
+        settled = true;
         clearTimeout(timeoutId);
         const data = e.data;
         
@@ -254,11 +259,21 @@ function runTests() {
                     terminalOut.style.boxShadow = "0 0 20px rgba(251, 191, 36, 0.5) inset";
                     setTimeout(() => { terminalOut.style.boxShadow = "none"; }, 2000);
                 } else {
-                    log(`Can you optimize it further to beat ${topScore} Bytes?`, '#bbb');
+                    log(`Can you optimize it further to beat ${topScore} Bytes?`, '`#bbb`');
                 }
             }
         }
         
+        worker.terminate();
+        btnRun.disabled = false;
+        btnRun.innerHTML = `<i class="fas fa-play"></i> Run Tests`;
+    };
+    
+    worker.onerror = function(e) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        log(`Worker Error: ${e.message || 'Failed to start execution worker'}`, 'var(--accent-red)');
         worker.terminate();
         btnRun.disabled = false;
         btnRun.innerHTML = `<i class="fas fa-play"></i> Run Tests`;
