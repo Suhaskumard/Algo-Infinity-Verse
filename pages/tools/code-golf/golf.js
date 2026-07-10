@@ -83,7 +83,14 @@ function loadChallenge(key) {
     c.leaderboard.forEach((entry, idx) => {
         const li = document.createElement('li');
         li.className = `lb-item rank-${idx+1}`;
-        li.innerHTML = `<span class="lb-user">${idx+1}. ${entry.user}</span><span class="lb-score">${entry.bytes} B</span>`;
+        const userSpan = document.createElement('span');
+        userSpan.className = 'lb-user';
+        userSpan.textContent = `${idx+1}. ${entry.user}`;
+        const scoreSpan = document.createElement('span');
+        scoreSpan.className = 'lb-score';
+        scoreSpan.textContent = `${entry.bytes} B`;
+        li.appendChild(userSpan);
+        li.appendChild(scoreSpan);
         // Tooltip for code
         li.title = entry.code;
         leaderboardEl.appendChild(li);
